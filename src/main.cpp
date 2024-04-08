@@ -40,6 +40,7 @@ shared_ptr<Material> material;
 shared_ptr<Shape> bunny;
 shared_ptr<Shape> teapot;
 shared_ptr<Shape> sphere;
+shared_ptr<Shape> revolution;
 shared_ptr<Shape> plane;
 shared_ptr<Shape> frustum;
 shared_ptr<Light> sun;
@@ -210,6 +211,8 @@ static void init()
 	prog->addUniform("kd");
 	prog->addUniform("ks");
 	prog->addUniform("s");
+	prog->addUniform("polar");
+	prog->addUniform("t");
 	prog->setVerbose(false);
 
 	auto light1 = make_shared<Light>();
@@ -243,7 +246,6 @@ static void init()
 	vector<float> spPosBuf;
 	vector<float> spNorBuf;
 	vector<float> spTexBuf;
-	//vector<float> spIndBuf;
 	vector<unsigned int> spIndBuf;
 	float height = 1.0;
 	float width = 1.0;
@@ -295,18 +297,82 @@ static void init()
 	sphere->loadPoints(spPosBuf, spNorBuf, spTexBuf, spIndBuf);
 	sphere->init();
 
-	//for (int i = 0; i < num_rows; i++) {
-	//	for (int j = 0; j < num_cols; j++) {
-	//		int x = i * (num_cols + 1) + j;
-	//		indBuf.push_back(x);
-	//		indBuf.push_back(x + 1);
-	//		indBuf.push_back(x + 1 + num_cols + 1);
+	vector<float> rvPosBuf;
+	vector<float> rvNorBuf;
+	vector<float> rvTexBuf;
+	vector<unsigned int> rvIndBuf;
+	//float height = 1.0;
+	width = 2.0;
+	//int num_rows = 100;
+	//int num_cols = 100;
 
-	//		indBuf.push_back(x);
-	//		indBuf.push_back(x + 1 + num_cols + 1);
-	//		indBuf.push_back(x + num_cols + 1);
-	//	}
-	//}
+	for (int i = 0; i <= num_cols; i++) {
+		float u = i / (float)num_cols;
+		float x = u * width - width / 2;
+		for (int j = 0; j <= num_rows; j++) {
+			float v = j / (float)num_rows;
+			float theta = v * 2 * M_PI;
+
+			float c = 0.2;
+			float s = 5;
+			float h = 2;
+
+			float f = c * (cos(s * x) + h);
+			float y = f * cos(theta);
+			float z = f * sin(theta);
+
+			glm::vec3 dpdx(
+				1.0f,
+				-c * s * sin(s * x) * cos(theta),
+				-c * s * sin(s * x) * sin(theta)
+			);
+
+			glm::vec3 dpdt(
+				0.0f,
+				-c * (cos(s * x) + h) * sin(theta),
+				 c * (cos(s * x) + h) * cos(theta)
+			);
+
+			glm::vec3 n = glm::normalize(glm::cross(dpdx, dpdt));
+
+			rvPosBuf.push_back(y);
+			rvPosBuf.push_back(x);
+			rvPosBuf.push_back(z);
+
+			rvNorBuf.push_back(n.y);
+			rvNorBuf.push_back(n.x);
+			rvNorBuf.push_back(n.z);
+
+			//rvPosBuf.push_back(x);
+			//rvPosBuf.push_back(theta);
+			//rvPosBuf.push_back(0.0f);
+
+			//rvNorBuf.push_back(0.0f);
+			//rvNorBuf.push_back(0.0f);
+			//rvNorBuf.push_back(0.0f);
+		}
+	}
+
+	for (int i = 0; i < num_cols; i++) {
+		for (int j = 0; j < num_rows; j++) {
+			int v1 = (num_rows + 1) * i + j;
+			int v2 = v1 + 1;
+			int v3 = v1 + num_rows + 1;
+			int v4 = v2 + num_rows + 1;
+
+			rvIndBuf.push_back(v1);
+			rvIndBuf.push_back(v4);
+			rvIndBuf.push_back(v2);
+
+			rvIndBuf.push_back(v1);
+			rvIndBuf.push_back(v3);
+			rvIndBuf.push_back(v4);
+		}
+	}
+
+	revolution = make_shared<Shape>();
+	revolution->loadPoints(rvPosBuf, rvNorBuf, rvTexBuf, rvIndBuf);
+	revolution->init();
 
 
 	GLSL::checkError(GET_FILE_LINE);
@@ -320,7 +386,7 @@ static void init()
 		shared_ptr<Thing> thing;
 		Shape* shape;
 		int num = (int)rand() % 2;
-		num = Thing::SPHERE;
+		num = Thing::REVOLUTION;
 
 		switch (num) {
 			case Thing::BUNNY:
@@ -331,6 +397,9 @@ static void init()
 				break;
 			case Thing::SPHERE:
 				thing = make_shared<Thing>(sphere.get(), Thing::SPHERE);
+				break;
+			case Thing::REVOLUTION:
+				thing = make_shared<Thing>(revolution.get(), Thing::REVOLUTION);
 				break;
 		}
 
@@ -475,6 +544,9 @@ static void render()
 	//MV->translate(0.0f, 0.0f, -5.0f);
 	
 	prog->bind();
+
+	glUniform1f(prog->getUniform("t"), 0.0f);
+
 
 	glViewport(0, 0, width, height);
 

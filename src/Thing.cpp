@@ -1,8 +1,10 @@
 #include "Thing.h"
 #include "helpers.h"
+#include "Program.h"
 #include <glm/glm.hpp>
 #include <cmath> 
 #include <math.h>
+#include <GL/glew.h>
 //float randf() { return rand() / (float)RAND_MAX; }
 
 using namespace std;
@@ -55,15 +57,16 @@ void Thing::update(shared_ptr<MatrixStack> MV, double t) {
 	}
 }
 
-void Thing::draw(const std::shared_ptr<Program> prog) {
+void Thing::draw(std::shared_ptr<Program> prog) {
 	switch (type) {
 	case Thing::BUNNY:
 	case Thing::TEAPOT:
-		shape->draw(prog);
-		break;
 	case Thing::SPHERE:
+		glUniform1i(prog->getUniform("polar"), 0);
+		break;
 	case Thing::REVOLUTION:
-		shape->draw(prog);
+		glUniform1i(prog->getUniform("polar"), 0);
 		break;
 	}
+	shape->draw(prog);
 }
