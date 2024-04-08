@@ -2,6 +2,7 @@
 #include "helpers.h"
 #include <glm/glm.hpp>
 #include <cmath> 
+#include <math.h>
 //float randf() { return rand() / (float)RAND_MAX; }
 
 using namespace std;
@@ -29,16 +30,40 @@ Thing::Thing(Shape* s, Thing::shape_type t) : shape(s), type(t) {
 //}
 
 void Thing::update(shared_ptr<MatrixStack> MV, double t) {
+	float h = 1;
+	float s = 0.25;
+	float r = 2.0;
+
 	switch(type) {
 		case Thing::BUNNY:
-			MV->rotate(-1.5 * t, 0.0f, 1.0f, 0.0f);
+			MV->rotate(-1.5 * (t + timeShift), 0.0f, 1.0f, 0.0f);
 			break;
 		case Thing::TEAPOT:
+			MV->rotate(1.57, 0.0f, 1.0f, 0.0f);
 			glm::mat4 S(1.0f);
-			S[1][0] = 0.7f * cos(2 * t);
+			S[1][0] = 0.7f * cos(2 * (t + timeShift));
 			MV->multMatrix(S);
+			MV->rotate(-1.57, 0.0f, 1.0f, 0.0f);
+			break;
+		case Thing::SPHERE:
+			
+			MV->translate(0.0f, (h / 2) * (-1 * cos(r * (t + timeShift)) + 1), 0.0f);
+			MV->scale(1 + (s / 2) * (cos(2 * r * (t + timeShift)) - 1), 1.0, 1 + (s / 2) * (cos(2 * r * (t + timeShift)) - 1));
 			break;
 		default:
 			break;
+	}
+}
+
+void Thing::draw(const std::shared_ptr<Program> prog) {
+	switch (type) {
+	case Thing::BUNNY:
+	case Thing::TEAPOT:
+		shape->draw(prog);
+		break;
+	case Thing::SPHERE:
+	case Thing::REVOLUTION:
+		shape->draw(prog);
+		break;
 	}
 }

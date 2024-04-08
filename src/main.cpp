@@ -229,27 +229,85 @@ static void init()
 	teapot->loadMesh(RESOURCE_DIR + "teapot.obj");
 	teapot->init();
 
-	sphere = make_shared<Shape>();
-	sphere->loadMesh(RESOURCE_DIR + "sphere.obj");
-	sphere->init();
+	//sphere = make_shared<Shape>();
+	//sphere->loadMesh(RESOURCE_DIR + "sphere.obj");
+	//sphere->init();
 	
 	plane = make_shared<Shape>();
 	plane->loadMesh(RESOURCE_DIR + "plane.obj");
 	plane->init();
 
-	//frustum = make_shared<Shape>();
-	//frustum->loadMesh(RESOURCE_DIR + "frustum.obj");
-	//frustum->init();
 
-	//hudMat = Material();
-	//hudMat.ke = glm::vec3(0.2f, 0.2f, 0.2f);
-	//hudMat.kd = glm::vec3(0.4f, 0.4f, 0.4f);
-	//hudMat.ks = glm::vec3(0.8f, 0.8f, 0.8f);
-	//hudMat.s = 100.0;
-	//fx = 0.8;
-	//fy = 0.6;
-	//scaleFactor = 0.15;
-	//hudLightPos = glm::vec3(0.0, fy, -2.0);
+	sphere = make_shared<Shape>();
+	
+	vector<float> spPosBuf;
+	vector<float> spNorBuf;
+	vector<float> spTexBuf;
+	//vector<float> spIndBuf;
+	vector<unsigned int> spIndBuf;
+	float height = 1.0;
+	float width = 1.0;
+	int num_rows = 100;
+	int num_cols = 100;
+
+	for (int i = 0; i <= num_rows; i++) {
+		float v = i / (float)num_rows * height;
+		float phi = v * M_PI;
+		for (int j = 0; j <= num_cols; j++) {
+			float u = j / (float)num_cols * width;
+			float theta = u * 2 * M_PI;
+
+			float x = sin(theta) * sin(phi) * width / 2;
+			float y = cos(theta) * height / 2;
+			float z = sin(theta) * cos(phi) * width / 2;
+
+			spPosBuf.push_back(x);
+			spPosBuf.push_back(y);
+			spPosBuf.push_back(z);
+
+			spNorBuf.push_back(sin(theta) * sin(phi));
+			spNorBuf.push_back(cos(theta));
+			spNorBuf.push_back(sin(theta) * cos(phi));
+		}
+	}
+
+	for (int i = 0; i < num_cols; i++) {
+		for (int j = 0; j < num_rows; j++) {
+			int v1 = (num_rows + 1) * i + j;
+			int v2 = v1 + 1;
+			int v3 = v1 + num_rows + 1;
+			int v4 = v2 + num_rows + 1;
+
+			spIndBuf.push_back(v1);
+			spIndBuf.push_back(v4);
+			spIndBuf.push_back(v2);
+
+			spIndBuf.push_back(v1);
+			spIndBuf.push_back(v3);
+			spIndBuf.push_back(v4);
+		}
+	}
+
+	//sphere->setPosBuf(spPosBuf);
+	//sphere->setNorBuf(spNorBuf);
+	//sphere->setIndBuf(spIndBuf);
+
+	sphere->loadPoints(spPosBuf, spNorBuf, spTexBuf, spIndBuf);
+	sphere->init();
+
+	//for (int i = 0; i < num_rows; i++) {
+	//	for (int j = 0; j < num_cols; j++) {
+	//		int x = i * (num_cols + 1) + j;
+	//		indBuf.push_back(x);
+	//		indBuf.push_back(x + 1);
+	//		indBuf.push_back(x + 1 + num_cols + 1);
+
+	//		indBuf.push_back(x);
+	//		indBuf.push_back(x + 1 + num_cols + 1);
+	//		indBuf.push_back(x + num_cols + 1);
+	//	}
+	//}
+
 
 	GLSL::checkError(GET_FILE_LINE);
 
@@ -261,8 +319,8 @@ static void init()
 	{
 		shared_ptr<Thing> thing;
 		Shape* shape;
-		int num = rand() % 4;
-		num = Thing::TEAPOT;
+		int num = (int)rand() % 2;
+		num = Thing::SPHERE;
 
 		switch (num) {
 			case Thing::BUNNY:
@@ -270,6 +328,9 @@ static void init()
 				break;
 			case Thing::TEAPOT:
 				thing = make_shared<Thing>(teapot.get(), Thing::TEAPOT);
+				break;
+			case Thing::SPHERE:
+				thing = make_shared<Thing>(sphere.get(), Thing::SPHERE);
 				break;
 		}
 
@@ -446,9 +507,9 @@ static void render()
 				MV->scale(th->initScale);
 				//float scale_factor = 1.0f + 0.5 * sin(t);
 				//MV->scale(th->getScale(t));
-				th->update(MV, t);
 				MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
 				MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
+				th->update(MV, t);
 
 				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
 
@@ -465,7 +526,7 @@ static void render()
 				glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
 				glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
 
-				th->shape->draw(prog);
+				th->draw(prog);
 
 				MV->popMatrix();
 			}
@@ -491,6 +552,7 @@ static void render()
 					glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
 					glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
 
+					//sphere->draw(prog);
 					sphere->draw(prog);
 				MV->popMatrix();
 			}

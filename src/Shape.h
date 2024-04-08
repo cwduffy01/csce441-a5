@@ -20,10 +20,17 @@ class Shape
 public:
 	Shape();
 	virtual ~Shape();
-	void loadMesh(const std::string &meshName);
+	void loadMesh(const std::string& meshName);
+	void loadPoints(std::vector<float> posBuf, std::vector<float> norBuf, std::vector<float> texBuf, std::vector<unsigned int> indBuf);
 	void fitToUnitBox();
 	void init();
 	void draw(const std::shared_ptr<Program> prog) const;
+	void drawPoints(const std::shared_ptr<Program> prog) const;
+
+	void setPosBuf(std::vector<float>& pBuf);
+	void setNorBuf(std::vector<float>& nBuf);
+	void setTexBuf(std::vector<float>& tBuf);
+	void setIndBuf(std::vector<unsigned int>& iBuf);
 
 	float miny;
 	
@@ -31,9 +38,11 @@ private:
 	std::vector<float> posBuf;
 	std::vector<float> norBuf;
 	std::vector<float> texBuf;
+	std::vector<unsigned int> indBuf;
 	unsigned posBufID;
 	unsigned norBufID;
 	unsigned texBufID;
+	unsigned indBufID;
 };
 
 #endif

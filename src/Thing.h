@@ -4,6 +4,7 @@
 #include "Shape.h"
 #include "Material.h"
 #include "MatrixStack.h"
+#include <cmath>
 
 class Thing {
 public:
@@ -26,6 +27,8 @@ public:
 
 	glm::vec3 getScale(float time);
 	void update(shared_ptr<MatrixStack> MV, double t);
+
+	void draw(const std::shared_ptr<Program> prog);
 
 private:
 	float scaleFactor;
