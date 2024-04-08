@@ -261,12 +261,17 @@ static void init()
 	{
 		shared_ptr<Thing> thing;
 		Shape* shape;
-		float num = randf();
-		num = 0;
-		if (num < 0.5) { 
-			thing = make_shared<Thing>(bunny.get(), Thing::BUNNY);
+		int num = rand() % 4;
+		num = Thing::TEAPOT;
+
+		switch (num) {
+			case Thing::BUNNY:
+				thing = make_shared<Thing>(bunny.get(), Thing::BUNNY);
+				break;
+			case Thing::TEAPOT:
+				thing = make_shared<Thing>(teapot.get(), Thing::TEAPOT);
+				break;
 		}
-		else { shape = teapot.get(); }
 
 		
 
