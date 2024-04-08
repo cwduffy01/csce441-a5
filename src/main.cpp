@@ -259,14 +259,16 @@ static void init()
 	// create things
 	for (int i = 0; i < rowCount * colCount; i++)
 	{
-
+		shared_ptr<Thing> thing;
 		Shape* shape;
 		float num = randf();
 		num = 0;
-		if (num < 0.5) { shape = bunny.get(); }
+		if (num < 0.5) { 
+			thing = make_shared<Thing>(bunny.get(), Thing::BUNNY);
+		}
 		else { shape = teapot.get(); }
 
-		auto thing = make_shared<Thing>(shape);
+		
 
 		int row = i / colCount;
 		int col = i % colCount;
@@ -384,8 +386,8 @@ static void render()
 	float aspect = (float)width/(float)height;
 	camera->setAspect(aspect);
 	
-	double t = 0.0;
-	//double t = glfwGetTime();
+	//double t = 0.0;
+	double t = glfwGetTime();
 	//if(!keyToggles[(unsigned)' ']) {
 	//	// Spacebar turns animation on/off
 	//	t = 0.0f;
@@ -436,8 +438,10 @@ static void render()
 				MV->pushMatrix();
 
 				MV->translate(th->initPos);
+				MV->scale(th->initScale);
 				//float scale_factor = 1.0f + 0.5 * sin(t);
-				MV->scale(th->getScale(t));
+				//MV->scale(th->getScale(t));
+				th->update(MV, t);
 				MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
 				MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
 
