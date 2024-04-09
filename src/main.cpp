@@ -436,12 +436,15 @@ static void init()
 	float cpz = (colCount) * spacing;
 	float cc = 0.25;
 	for (int i = 0; i < numLights; i++) {
-		
+		auto l = make_shared<Light>();
+		l->lightPos = glm::vec3(cpx * (randf() - 0.5), 0.5, cpz * (randf() - 0.5));
+		l->initPos = l->lightPos;
+		l->color = glm::vec3((1 - 2 * cc) * randf() + cc, (1 - 2 * cc) * randf() + cc, (1 - 2 * cc) * randf() + cc);
 
-		//void rand_light() { return (1 - 2 * cc) * randf() + cc; }
-		lights[2 * i] = glm::vec3(cpx * (randf() - 0.5), 0.5, cpz * (randf() - 0.5));
-		//lights[2 * i] = lightPos;
-		lights[2 * i + 1] = glm::vec3((1 - 2 * cc) * randf() + cc, (1 - 2 * cc) * randf() + cc, (1 - 2 * cc) * randf() + cc);
+		lights[2 * i] = l->lightPos;
+		lights[2 * i + 1] = l->color;
+
+		lightVec.push_back(l);
 	}
 }
 
@@ -597,10 +600,73 @@ static void render()
 
 		//glm::vec4 camLightPos = camMV * glm::vec4(l->lightPos, 1.0f);
 
-		glUniform3fv(prog->getUniform("lights"), numLights * 2, value_ptr(lights[0]));
-		glUniform1i(prog->getUniform("numLights"), numLights);
+		
 		
 		MV->pushMatrix();
+			glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
+			glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
+			glUniform1f(prog->getUniform("s"), 0.0f);
+
+			for (int i = 0; i < lightVec.size(); i++) {
+				shared_ptr<Light> l = lightVec.at(i);
+				l->update(t);
+
+				lights[2 * i] = l->lightPos;
+
+				MV->pushMatrix();
+				MV->translate(l->lightPos);
+				MV->scale(0.1f, 0.1f, 0.1f);
+				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+
+				glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+				glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+				glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+
+				glUniform3f(prog->getUniform("ke"), l->color.x, l->color.y, l->color.z);
+				//glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
+				//glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
+				sphere->draw(prog);
+				MV->popMatrix();
+			}
+
+			//for (int i = 0; i < numLights; i++) {
+			//	MV->pushMatrix();
+			//	glm::vec3 initPos = lights[2 * i];
+			//	glm::vec3 col = lights[2 * i + 1];
+
+			//	float theta = atan2(initPos.x, initPos.z) + 0.005;
+			//	float r = sqrt(pow(initPos.x, 2.0) + pow(initPos.z, 2.0));
+			//	glm::vec3 pos = glm::vec3(
+			//		r * sin(theta),
+			//		0.5,
+			//		r * cos(theta)
+			//	);
+
+			//	lights[2 * i] = pos;
+
+			//	MV->translate(pos);
+			//	MV->scale(0.1f, 0.1f, 0.1f);
+			//	invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+
+			//	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+			//	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+			//	glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+
+			//	glUniform3f(prog->getUniform("ke"), col.x, col.y, col.z);
+			//	glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
+			//	glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
+			//	glUniform1f(prog->getUniform("s"), 0.0f);
+
+			//	//glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
+			//	//glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
+
+			//	//sphere->draw(prog);
+			//	sphere->draw(prog);
+			//	MV->popMatrix();
+			//}
+
+			glUniform3fv(prog->getUniform("lights"), numLights * 2, value_ptr(lights[0]));
+			glUniform1i(prog->getUniform("numLights"), numLights);
 
 			for (shared_ptr<Thing> th : thingVec) {
 				MV->pushMatrix();
@@ -634,41 +700,14 @@ static void render()
 				MV->popMatrix();
 			}
 
-			for (int i = 0; i < numLights; i++) {
-				MV->pushMatrix();
-					glm::vec3 initPos = lights[2 * i];
-					glm::vec3 col = lights[2 * i + 1];
 
-					float theta = atan2(initPos.x, initPos.z) + 0.005;
-					float r = sqrt(pow(initPos.x, 2.0) + pow(initPos.z, 2.0));
-					glm::vec3 pos = glm::vec3(
-						r * sin(theta),
-						0.5,
-						r * cos(theta)
-					);
 
-					lights[2 * i] = pos;
+			//for (Light l : lightVec) {
+			//	l.update(t);
 
-					MV->translate(pos);
-					MV->scale(0.1f, 0.1f, 0.1f);
-					invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+			//}
 
-					glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-					glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-					glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
 
-					glUniform3f(prog->getUniform("ke"), col.x, col.y, col.z);
-					glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
-					glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
-					glUniform1f(prog->getUniform("s"), 0.0f);
-
-					//glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
-					//glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
-
-					//sphere->draw(prog);
-					sphere->draw(prog);
-				MV->popMatrix();
-			}
 
 			//for (shared_ptr<Light> l : lightVec) {
 			//	
