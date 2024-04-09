@@ -11,8 +11,11 @@ public:
 	Light();
 	Light(glm::vec3 lightPos, glm::vec3 color);
 
+	glm::vec3 initPos;
 	glm::vec3 lightPos;
 	glm::vec3 color;
+
+	void update(double t);
 
 private:
 

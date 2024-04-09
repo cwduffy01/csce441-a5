@@ -636,8 +636,18 @@ static void render()
 
 			for (int i = 0; i < numLights; i++) {
 				MV->pushMatrix();
-					glm::vec3 pos = lights[2 * i];
+					glm::vec3 initPos = lights[2 * i];
 					glm::vec3 col = lights[2 * i + 1];
+
+					float theta = atan2(initPos.x, initPos.z) + 0.005;
+					float r = sqrt(pow(initPos.x, 2.0) + pow(initPos.z, 2.0));
+					glm::vec3 pos = glm::vec3(
+						r * sin(theta),
+						0.5,
+						r * cos(theta)
+					);
+
+					lights[2 * i] = pos;
 
 					MV->translate(pos);
 					MV->scale(0.1f, 0.1f, 0.1f);
