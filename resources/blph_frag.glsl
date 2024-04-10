@@ -5,8 +5,8 @@ uniform int numLights;
 uniform mat4 camMV;
 uniform vec3 ke;
 uniform vec3 kd;
-uniform vec3 ks;
-uniform float s;
+//uniform vec3 ks;
+//uniform float s;
 
 varying vec3 position;
 varying vec3 normal;
@@ -14,6 +14,9 @@ varying vec3 normal;
 void main()
 {
 	vec3 fragColor = ke;
+
+	vec3 ks = vec3(1.0, 1.0, 1.0);
+	float s = 10.0;
 
 	for (int i = 0; i < numLights; i++) {
 		vec3 lpos = vec3(camMV *  vec4(lights[2 * i], 1.0f));
