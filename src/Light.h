@@ -14,6 +14,7 @@ public:
 	glm::vec3 initPos;
 	glm::vec3 lightPos;
 	glm::vec3 color;
+	float tOff;
 
 	void update(double t);
 

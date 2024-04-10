@@ -11,13 +11,13 @@ Light::Light(glm::vec3 lightPos, glm::vec3 color) {
 }
 
 void Light::update(double t) {
-	float r = length(initPos);
+	float r = pow(pow(initPos.x, 2) + pow(initPos.z, 2), 0.5);
 
 	float theta = atan2(initPos.x, initPos.z) + 0.1 * t;
 
 	lightPos = glm::vec3(
 		r * sin(theta),
-		0.5,
+		initPos.y + 0.2 * sin(t + tOff),
 		r * cos(theta)
 	);
 }

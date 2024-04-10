@@ -25,9 +25,6 @@
 #include "Thing.h"
 #include "helpers.h"
 
-//float randf() { return rand() / (float)RAND_MAX; }
-
-
 using namespace std;
 
 GLFWwindow *window; // Main application window
@@ -79,53 +76,6 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
-
-	//if (action == GLFW_PRESS) {
-	//	switch (key) {
-	//		case GLFW_KEY_W:
-	//			camera->startDirection(FreelookCam::FORWARDS);
-	//			break;
-	//		case GLFW_KEY_A:
-	//			camera->startDirection(FreelookCam::LEFT);
-	//			break;
-	//		case GLFW_KEY_S:
-	//			camera->startDirection(FreelookCam::BACKWARDS);
-	//			break;
-	//		case GLFW_KEY_D:
-	//			camera->startDirection(FreelookCam::RIGHT);
-	//			break;
-	//		case GLFW_KEY_Z:
-	//			if (shift) { camera->startZoom(FreelookCam::ZOOM_IN); }
-	//			else { camera->startZoom(FreelookCam::ZOOM_OUT); }
-	//		case GLFW_KEY_LEFT_SHIFT:
-	//		case GLFW_KEY_RIGHT_SHIFT:
-	//			shift = true;
-	//			break;
-	//	}
-	//}
-	//else if (action == GLFW_RELEASE) {
-	//	switch (key) {
-	//		case GLFW_KEY_W:
-	//			camera->stopDirection(FreelookCam::FORWARDS);
-	//			break;
-	//		case GLFW_KEY_A:
-	//			camera->stopDirection(FreelookCam::LEFT);
-	//			break;
-	//		case GLFW_KEY_S:
-	//			camera->stopDirection(FreelookCam::BACKWARDS);
-	//			break;
-	//		case GLFW_KEY_D:
-	//			camera->stopDirection(FreelookCam::RIGHT);
-	//			break;
-	//		case GLFW_KEY_Z:
-	//			camera->stopZoom();
-	//			break;
-	//		case GLFW_KEY_LEFT_SHIFT:
-	//		case GLFW_KEY_RIGHT_SHIFT:
-	//			shift = false;
-	//			break;
-	//	}
-	//}
 }
 
 // This function is called when the mouse is clicked
@@ -220,17 +170,6 @@ static void init()
 	prog->addUniform("numLights");
 	prog->setVerbose(false);
 
-	//auto light1 = make_shared<Light>();
-	//light1->lightPos = glm::vec3(lightPos);
-	//light1->color = glm::vec3(0.0f, 1.0f, 0.5f);
-
-	//lights[0] = light1->lightPos;
-	//lights[1] = light1->color;
-
-	//lightVec.push_back(light1);
-
-
-
 	camera = make_shared<Camera>();
 	camera->setInitDistance(20.0f); // FreelookCam's initial Z translation
 	
@@ -241,15 +180,10 @@ static void init()
 	teapot = make_shared<Shape>();
 	teapot->loadMesh(RESOURCE_DIR + "teapot.obj");
 	teapot->init();
-
-	//sphere = make_shared<Shape>();
-	//sphere->loadMesh(RESOURCE_DIR + "sphere.obj");
-	//sphere->init();
 	
 	plane = make_shared<Shape>();
 	plane->loadMesh(RESOURCE_DIR + "plane.obj");
 	plane->init();
-
 
 	sphere = make_shared<Shape>();
 	
@@ -300,10 +234,6 @@ static void init()
 		}
 	}
 
-	//sphere->setPosBuf(spPosBuf);
-	//sphere->setNorBuf(spNorBuf);
-	//sphere->setIndBuf(spIndBuf);
-
 	sphere->loadPoints(spPosBuf, spNorBuf, spTexBuf, spIndBuf);
 	sphere->init();
 
@@ -311,10 +241,7 @@ static void init()
 	vector<float> rvNorBuf;
 	vector<float> rvTexBuf;
 	vector<unsigned int> rvIndBuf;
-	//float height = 1.0;
 	width = 2.0;
-	//int num_rows = 100;
-	//int num_cols = 100;
 
 	for (int i = 0; i <= num_cols; i++) {
 		float u = i / (float)num_cols;
@@ -352,14 +279,6 @@ static void init()
 			rvNorBuf.push_back(n.y);
 			rvNorBuf.push_back(n.x);
 			rvNorBuf.push_back(n.z);
-
-			//rvPosBuf.push_back(x);
-			//rvPosBuf.push_back(theta);
-			//rvPosBuf.push_back(0.0f);
-
-			//rvNorBuf.push_back(0.0f);
-			//rvNorBuf.push_back(0.0f);
-			//rvNorBuf.push_back(0.0f);
 		}
 	}
 
@@ -396,7 +315,6 @@ static void init()
 		shared_ptr<Thing> thing;
 		Shape* shape;
 		int num = (int)rand() % 4;
-		//num = Thing::REVOLUTION;
 
 		switch (num) {
 			case Thing::BUNNY:
@@ -413,8 +331,6 @@ static void init()
 				break;
 		}
 
-		
-
 		int row = i / colCount;
 		int col = i % colCount;
 
@@ -423,9 +339,6 @@ static void init()
 			0.0,
 			(col - (colCount / 2.0)) * spacing
 		);
-		//thing->initScale = glm::vec3(
-		//	1.0f, 1.0f, 1.0f
-		//);
 
 		thingVec.push_back(thing);
 	}
@@ -440,6 +353,7 @@ static void init()
 		l->lightPos = glm::vec3(cpx * (randf() - 0.5), 0.5, cpz * (randf() - 0.5));
 		l->initPos = l->lightPos;
 		l->color = glm::vec3((1 - 2 * cc) * randf() + cc, (1 - 2 * cc) * randf() + cc, (1 - 2 * cc) * randf() + cc);
+		l->tOff = randf() * 2 * M_PI;
 
 		lights[2 * i] = l->lightPos;
 		lights[2 * i + 1] = l->color;
@@ -447,84 +361,6 @@ static void init()
 		lightVec.push_back(l);
 	}
 }
-
-//void drawScene(std::shared_ptr<MatrixStack> P, std::shared_ptr<MatrixStack> MV, double t, glm::mat4 camMV) {
-//	glm::mat4 invMV;
-//	glm::vec4 camLightPos = camMV * glm::vec4(sun->lightPos, 1.0f);
-//	MV->pushMatrix();
-//		
-//		for (shared_ptr<Thing> th: thingVec) {
-//			MV->pushMatrix();
-//
-//				MV->translate(th->initPos);
-//				//float scale_factor = 1.0f + 0.5 * sin(t);
-//				MV->scale(th->getScale(t));
-//				MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
-//				MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
-//
-//				
-//
-//				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
-//				
-//				glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-//				glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-//				glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-//
-//				//cout << th->material.ke.x << " " << th->material.ke.y << " " << th->material.ke.z << endl;
-//
-//				glUniform3f(prog->getUniform("ke"), th->material.ke.x, th->material.ke.y, th->material.ke.z);
-//				glUniform3f(prog->getUniform("kd"), th->material.kd.x, th->material.kd.y, th->material.kd.z);
-//				glUniform3f(prog->getUniform("ks"), th->material.ks.x, th->material.ks.y, th->material.ks.z);
-//				glUniform1f(prog->getUniform("s"), th->material.s);
-//				glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
-//				glUniform3f(prog->getUniform("lightColor"), sun->color.x, sun->color.y, sun->color.z);
-//
-//				th->shape->draw(prog);
-//
-//			MV->popMatrix();
-//		}
-//
-//		MV->pushMatrix();
-//			MV->translate(sun->lightPos);
-//			
-//			//lPosCam = MV->topMatrix() * glm::vec4(sun->lightPos, 1.0f);
-//			MV->scale(0.3f, 0.3f, 0.3f);
-//			invMV = glm::transpose(glm::inverse(MV->topMatrix()));
-//
-//			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-//			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-//			glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-//
-//			glUniform3f(prog->getUniform("ke"), 1.0f, 1.0f, 0.0f);
-//			glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
-//			glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
-//			glUniform1f(prog->getUniform("s"), 100.0f);
-//
-//			glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
-//			glUniform3f(prog->getUniform("lightColor"), sun->color.x, sun->color.y, sun->color.z);
-//
-//			sphere->draw(prog);
-//		MV->popMatrix();
-//
-//		MV->pushMatrix();
-//			invMV = glm::transpose(glm::inverse(MV->topMatrix()));
-//
-//			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-//			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-//			glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-//
-//			glUniform3f(prog->getUniform("ke"), 0.5f, 0.5f, 0.5f);
-//			//glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
-//			//glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
-//			//glUniform1f(prog->getUniform("s"), 100.0f);
-//
-//			glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
-//			glUniform3f(prog->getUniform("lightColor"), sun->color.x, sun->color.y, sun->color.z);
-//
-//			plane->draw(prog);
-//		MV->popMatrix();
-//	MV->popMatrix();
-//}
 
 // This function is called every frame to draw the scene.
 static void render()
@@ -536,11 +372,6 @@ static void render()
 	} else {
 		glDisable(GL_CULL_FACE);
 	}
-	//if(keyToggles[(unsigned)'z']) {
-	//	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	//} else {
-	//	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//}
 	
 	// Get current frame buffer size.
 	int width, height;
@@ -548,36 +379,19 @@ static void render()
 	float aspect = (float)width/(float)height;
 	camera->setAspect(aspect);
 	
-	//double t = 0.0;
 	double t = glfwGetTime();
-	//if(!keyToggles[(unsigned)' ']) {
-	//	// Spacebar turns animation on/off
-	//	t = 0.0f;
-	//}
 	
 	// Matrix stacks
 	auto P = make_shared<MatrixStack>();
 	auto MV = make_shared<MatrixStack>();
-
-	
-	
-
-
-	// UPDATE FREELOOK HERE
-	//camera->walk();
-	
-	// Apply camera transforms
-
-	//MV->translate(0.0f, 0.0f, -5.0f);
 	
 	prog->bind();
-
-	glUniform1f(prog->getUniform("t"), 0.0f);
-
 
 	glViewport(0, 0, width, height);
 
 	glm::mat4 invMV;
+
+	glUniform1f(prog->getUniform("t"), 0.0f);
 
 	// draw scene
 	P->pushMatrix();
@@ -588,20 +402,11 @@ static void render()
 
 		glUniformMatrix4fv(prog->getUniform("camMV"), 1, GL_FALSE, glm::value_ptr(camMV));
 
-
 		MV->translate(0.0f, -1.0f, 0.0f);
 	
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 
-		//drawScene(P, MV, t, camMV);
-
-		//auto l = lightVec.at(0);
-
-		//glm::vec4 camLightPos = camMV * glm::vec4(l->lightPos, 1.0f);
-
-		
-		
 		MV->pushMatrix();
 			glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
 			glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
@@ -623,117 +428,35 @@ static void render()
 				glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
 
 				glUniform3f(prog->getUniform("ke"), l->color.x, l->color.y, l->color.z);
-				//glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
-				//glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
 				sphere->draw(prog);
 				MV->popMatrix();
 			}
-
-			//for (int i = 0; i < numLights; i++) {
-			//	MV->pushMatrix();
-			//	glm::vec3 initPos = lights[2 * i];
-			//	glm::vec3 col = lights[2 * i + 1];
-
-			//	float theta = atan2(initPos.x, initPos.z) + 0.005;
-			//	float r = sqrt(pow(initPos.x, 2.0) + pow(initPos.z, 2.0));
-			//	glm::vec3 pos = glm::vec3(
-			//		r * sin(theta),
-			//		0.5,
-			//		r * cos(theta)
-			//	);
-
-			//	lights[2 * i] = pos;
-
-			//	MV->translate(pos);
-			//	MV->scale(0.1f, 0.1f, 0.1f);
-			//	invMV = glm::transpose(glm::inverse(MV->topMatrix()));
-
-			//	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			//	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			//	glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-
-			//	glUniform3f(prog->getUniform("ke"), col.x, col.y, col.z);
-			//	glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
-			//	glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
-			//	glUniform1f(prog->getUniform("s"), 0.0f);
-
-			//	//glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
-			//	//glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
-
-			//	//sphere->draw(prog);
-			//	sphere->draw(prog);
-			//	MV->popMatrix();
-			//}
 
 			glUniform3fv(prog->getUniform("lights"), numLights * 2, value_ptr(lights[0]));
 			glUniform1i(prog->getUniform("numLights"), numLights);
 
 			for (shared_ptr<Thing> th : thingVec) {
 				MV->pushMatrix();
+					MV->translate(th->initPos);
+					MV->scale(th->initScale);
+					MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
+					MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
+					th->update(MV, t);
 
-				MV->translate(th->initPos);
-				MV->scale(th->initScale);
-				//float scale_factor = 1.0f + 0.5 * sin(t);
-				//MV->scale(th->getScale(t));
-				MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
-				MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
-				th->update(MV, t);
+					invMV = glm::transpose(glm::inverse(MV->topMatrix()));
 
-				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+					glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+					glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+					glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
 
-				glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-				glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-				glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+					glUniform3f(prog->getUniform("ke"), th->material.ke.x, th->material.ke.y, th->material.ke.z);
+					glUniform3f(prog->getUniform("kd"), th->material.kd.x, th->material.kd.y, th->material.kd.z);
+					glUniform3f(prog->getUniform("ks"), th->material.ks.x, th->material.ks.y, th->material.ks.z);
+					glUniform1f(prog->getUniform("s"), th->material.s);
 
-				//cout << th->material.ke.x << " " << th->material.ke.y << " " << th->material.ke.z << endl;
-
-				glUniform3f(prog->getUniform("ke"), th->material.ke.x, th->material.ke.y, th->material.ke.z);
-				glUniform3f(prog->getUniform("kd"), th->material.kd.x, th->material.kd.y, th->material.kd.z);
-				glUniform3f(prog->getUniform("ks"), th->material.ks.x, th->material.ks.y, th->material.ks.z);
-				glUniform1f(prog->getUniform("s"), th->material.s);
-
-				/*glUniform3f(prog->getUniform("lightPos"), lights[0].x, camLightPos.y, camLightPos.z);
-				glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);*/
-
-				th->draw(prog);
-
+					th->draw(prog);
 				MV->popMatrix();
 			}
-
-
-
-			//for (Light l : lightVec) {
-			//	l.update(t);
-
-			//}
-
-
-
-			//for (shared_ptr<Light> l : lightVec) {
-			//	
-			//	MV->pushMatrix();
-			//		MV->translate(l->lightPos);
-
-			//		//lPosCam = MV->topMatrix() * glm::vec4(l->lightPos, 1.0f);
-			//		MV->scale(0.1f, 0.1f, 0.1f);
-			//		invMV = glm::transpose(glm::inverse(MV->topMatrix()));
-
-			//		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			//		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			//		glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-
-			//		glUniform3f(prog->getUniform("ke"), l->color.x, l->color.y, l->color.z);
-			//		glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
-			//		glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
-			//		glUniform1f(prog->getUniform("s"), 100.0f);
-
-			//		//glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
-			//		//glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
-
-			//		//sphere->draw(prog);
-			//		sphere->draw(prog);
-			//	MV->popMatrix();
-			//}
 
 			MV->pushMatrix();
 				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
@@ -747,51 +470,11 @@ static void render()
 				glUniform3f(prog->getUniform("ks"), 1.0f, 1.0f, 1.0f);
 				glUniform1f(prog->getUniform("s"), 10.0f);
 
-				//glUniform3f(prog->getUniform("lightPos"), camLightPos.x, camLightPos.y, camLightPos.z);
-				//glUniform3f(prog->getUniform("lightColor"), l->color.x, l->color.y, l->color.z);
-
 				plane->draw(prog);
 			MV->popMatrix();
 		MV->popMatrix();
 	MV->popMatrix();
 	P->popMatrix();
-
-	//if(!keyToggles[(unsigned)'t']) {
-	//	float s = 0.5;
-	//	glViewport(0, 0, s*width, s*height);
-	//	glEnable(GL_SCISSOR_TEST);
-	//	glScissor(0, 0, s*width, s*height);
-	//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//	glDisable(GL_SCISSOR_TEST);
-	//	P->pushMatrix();
-
-	//	float width = 25.0;
-	//	P->multMatrix(glm::ortho(-width, width, -width/aspect, width/aspect, -0.1f, -1000.0f));
-	//	MV->pushMatrix();
-	//		
-	//		//MV->translate(0.0, 10.0, 0.0);
-	//		MV->rotate(M_PI_2, 1.0, 0.0, 0.0);
-
-	//		drawScene(P, MV, t, MV->topMatrix());
-
-	//		glDisable(GL_DEPTH_TEST);
-	//		MV->pushMatrix();
-	//			MV->multMatrix(glm::inverse(camMV));
-	//			//MV->scale(aspect * tan();
-	//			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-
-	//			glUniform3f(prog->getUniform("ke"), 0.0f, 0.0f, 0.0f);
-	//			glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
-	//			glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
-	//			glUniform1f(prog->getUniform("s"), 0.0f);
-	//			
-	//			frustum->draw(prog);
-	//		MV->popMatrix();
-	//		glEnable(GL_DEPTH_TEST);
-
-	//	MV->popMatrix();
-	//	P->popMatrix();
-	//}
 
 	prog->unbind();
 	

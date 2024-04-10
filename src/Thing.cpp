@@ -5,7 +5,6 @@
 #include <cmath> 
 #include <math.h>
 #include <GL/glew.h>
-//float randf() { return rand() / (float)RAND_MAX; }
 
 using namespace std;
 
@@ -20,16 +19,10 @@ Thing::Thing(Shape* s, Thing::shape_type t) : shape(s), type(t) {
 	initRotY = randf() * 2 * 3.14;
 
 	float sc = 0.5 * randf() + 0.5;
-	//sc = 0.3;
 	initScale = glm::vec3(sc, sc, sc);
 	scaleFactor = 0.1 * randf() + 0.1;
 	timeShift = randf() * 2 * 3.14;
 }
-
-//glm::vec3 Thing::getScale(float time) {
-//	float factor = initScale + scaleFactor * sin(1.0*(time + timeShift));
-//	return glm::vec3(factor, factor, factor);
-//}
 
 void Thing::update(shared_ptr<MatrixStack> MV, double t) {
 	float h = 1;
