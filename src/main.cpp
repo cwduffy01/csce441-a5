@@ -42,6 +42,7 @@ shared_ptr<Shape> plane;
 shared_ptr<Shape> cube;
 shared_ptr<Shape> frustum;
 shared_ptr<Shape> square;
+shared_ptr<Shape> ground;
 shared_ptr<Light> sun;
 glm::vec4 lightPos(0.0f, 2.0f, 0.0f, 1.0f);
 
@@ -74,6 +75,14 @@ int textureWidth = 640;
 int textureHeight = 480;
 
 bool keyToggles[256] = {false}; // only for English keyboards!
+
+enum render_mode {
+	DEFAULT,
+	POS_TEXTURE,
+	NOR_TEXTURE,
+	KE_TEXTURE,
+	KD_TEXTURE
+};
 
 // This function is called when a GLFW error occurs
 static void error_callback(int error, const char *description)
@@ -188,6 +197,7 @@ static void init()
 	progPass2->addUniform("numLights");
 	progPass2->addUniform("camMV");
 	progPass2->addUniform("blur");
+	progPass2->addUniform("renderMode");
 	progPass2->bind();
 	glUniform1i(progPass2->getUniform("posTexture"), 0);
 	glUniform1i(progPass2->getUniform("norTexture"), 1);
@@ -261,16 +271,6 @@ static void init()
 	teapot->loadMesh(RESOURCE_DIR + "teapot.obj");
 	teapot->init();
 	
-	plane = make_shared<Shape>();
-	plane->loadMesh(RESOURCE_DIR + "plane.obj");
-	plane->init();
-
-	cube = make_shared<Shape>();
-	cube->loadMesh(RESOURCE_DIR + "cube.obj");
-	cube->init();
-
-	sphere = make_shared<Shape>();
-	
 	vector<float> spPosBuf;
 	vector<float> spNorBuf;
 	vector<float> spTexBuf;
@@ -318,6 +318,7 @@ static void init()
 		}
 	}
 
+	sphere = make_shared<Shape>();
 	sphere->loadPoints(spPosBuf, spNorBuf, spTexBuf, spIndBuf);
 	sphere->init();
 
@@ -354,7 +355,8 @@ static void init()
 				 c * (cos(s * x) + h) * cos(theta)
 			);
 
-			glm::vec3 n = glm::normalize(glm::cross(dpdx, dpdt));
+			glm::vec3 n = glm::normalize(glm::cross(dpdt, dpdx));
+			
 
 			rvPosBuf.push_back(y);
 			rvPosBuf.push_back(x);
@@ -432,6 +434,53 @@ static void init()
 	square->loadPoints(sqPosBuf, sqNorBuf, sqTexBuf, sqIndBuf);
 	square->init();
 
+	vector<float> flPosBuf;
+	vector<float> flNorBuf;
+	vector<float> flTexBuf;
+	vector<unsigned int> flIndBuf;
+	float fsize = 200.0;
+
+	flPosBuf.push_back(-fsize / 2);
+	flPosBuf.push_back(0.0f);
+	flPosBuf.push_back(-fsize / 2);
+	flNorBuf.push_back(0.0f);
+	flNorBuf.push_back(1.0f);
+	flNorBuf.push_back(0.0f);
+
+	flPosBuf.push_back(-fsize / 2);
+	flPosBuf.push_back(0.0f);
+	flPosBuf.push_back(fsize / 2);
+	flNorBuf.push_back(0.0f);
+	flNorBuf.push_back(1.0f);
+	flNorBuf.push_back(0.0f);
+
+	flPosBuf.push_back(fsize / 2);
+	flPosBuf.push_back(0.0f);
+	flPosBuf.push_back(-fsize / 2);
+	flNorBuf.push_back(0.0f);
+	flNorBuf.push_back(1.0f);
+	flNorBuf.push_back(0.0f);
+
+	flPosBuf.push_back(fsize / 2);
+	flPosBuf.push_back(0.0f);
+	flPosBuf.push_back(fsize / 2);
+	flNorBuf.push_back(0.0f);
+	flNorBuf.push_back(1.0f);
+	flNorBuf.push_back(0.0f);
+
+	flIndBuf.push_back(0);
+	flIndBuf.push_back(1);
+	flIndBuf.push_back(3);
+
+	flIndBuf.push_back(0);
+	flIndBuf.push_back(2);
+	flIndBuf.push_back(3);
+
+
+	ground = make_shared<Shape>();
+	ground->loadPoints(flPosBuf, flNorBuf, flTexBuf, flIndBuf);
+	ground->init();
+
 	GLSL::checkError(GET_FILE_LINE);
 
 	float spacing = 2.0;
@@ -487,6 +536,10 @@ static void init()
 
 		lightVec.push_back(l);
 	}
+
+	progPass2->bind();
+	glUniform1i(progPass2->getUniform("renderMode"), render_mode::KD_TEXTURE);
+	progPass2->unbind();
 }
 
 // This function is called every frame to draw the scene.
@@ -586,7 +639,7 @@ static void render()
 						glUniform3f(progPass1->getUniform("ke"), 0.0f, 0.0f, 0.0f);
 						glUniform3f(progPass1->getUniform("kd"), 1.0f, 1.0f, 1.0f);
 
-						plane->draw(progPass1);
+						ground->draw(progPass1);
 					MV->popMatrix();
 				MV->popMatrix();
 			MV->popMatrix();

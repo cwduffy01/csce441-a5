@@ -5,6 +5,7 @@ uniform sampler2D norTexture;
 uniform sampler2D keTexture;
 uniform sampler2D kdTexture;
 uniform vec2 windowSize;
+uniform int renderMode;
     
 uniform vec3 lights[256];
 uniform int numLights;
@@ -68,28 +69,37 @@ void main()
         kd = texture2D(kdTexture, tex).rgb;
     }
 
-    vec3 fragColor = ke;
-	float s = 10.0;
+    if (renderMode == 0) {
+        vec3 fragColor = ke;
+	    float s = 10.0;
 
-    for (int i = 0; i < numLights; i++) {
-		vec3 lpos = vec3(camMV *  vec4(lights[2 * i], 1.0f));
-		vec3 lcol = lights[2 * i + 1];
+        for (int i = 0; i < numLights; i++) {
+		    vec3 lpos = vec3(camMV *  vec4(lights[2 * i], 1.0f));
+		    vec3 lcol = lights[2 * i + 1];
 
-		vec3 n = normalize(nor);
-		vec3 eye = normalize(-1 * pos);
-		vec3 l = normalize(lpos - pos);
-		vec3 h = normalize(eye + l);
+		    vec3 n = normalize(nor);
+		    vec3 eye = normalize(-1 * pos);
+		    vec3 l = normalize(lpos - pos);
+		    vec3 h = normalize(eye + l);
 
-		float diffuse = max(0, dot(l, n));
-		float specular = pow(max(0, dot(h, n)), s);
+		    float diffuse = max(0, dot(l, n));
+		    float specular = pow(max(0, dot(h, n)), s);
 
-		vec3 color = lcol * (kd * diffuse + specular);
+		    vec3 color = lcol * (kd * diffuse + specular);
 
-		float r = length(lpos - pos);
-		float att = 1.0 / (1.0 + 0.0429 * r + 0.9857 * pow(r, 2));
+		    float r = length(lpos - pos);
+		    float att = 1.0 / (1.0 + 0.0429 * r + 0.9857 * pow(r, 2));
 
-		fragColor += color * att;
-	}
+		    fragColor += color * att;
+	    }
 
-    gl_FragColor.rgb = fragColor;
+        gl_FragColor.rgb = fragColor;
+    }
+    else if (renderMode == 1) { gl_FragColor.rgb = pos; }
+    else if (renderMode == 2) { gl_FragColor.rgb = nor; }
+    else if (renderMode == 3) { gl_FragColor.rgb = ke; }
+    else if (renderMode == 4) { gl_FragColor.rgb = kd; }
+
+    
+    //gl_FragColor.rgb = nor;
 }
