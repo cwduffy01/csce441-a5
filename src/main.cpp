@@ -39,7 +39,9 @@ shared_ptr<Shape> teapot;
 shared_ptr<Shape> sphere;
 shared_ptr<Shape> revolution;
 shared_ptr<Shape> plane;
+shared_ptr<Shape> cube;
 shared_ptr<Shape> frustum;
+shared_ptr<Shape> square;
 shared_ptr<Light> sun;
 glm::vec4 lightPos(0.0f, 2.0f, 0.0f, 1.0f);
 
@@ -61,6 +63,18 @@ bool zoom;
 
 bool shift;
 
+shared_ptr<Program> progPass1;
+shared_ptr<Program> progPass2;
+
+GLuint framebufferID;
+//GLuint textureA;
+//GLuint textureB;
+GLuint posTexture;
+GLuint norTexture;
+GLuint keTexture;
+GLuint kdTexture;
+int textureWidth = 640;
+int textureHeight = 480;
 
 bool keyToggles[256] = {false}; // only for English keyboards!
 
@@ -148,27 +162,119 @@ static void init()
 	// Enable z-buffer test.
 	glEnable(GL_DEPTH_TEST);
 
-	prog = make_shared<Program>();
-	prog->setShaderNames(RESOURCE_DIR + "blph_vert.glsl", RESOURCE_DIR + "blph_frag.glsl");
-	prog->setVerbose(true);
-	prog->init();
-	prog->addAttribute("aPos");
-	prog->addAttribute("aNor");
-	prog->addUniform("MV");
-	prog->addUniform("invMV");
-	prog->addUniform("camMV");
-	prog->addUniform("P");
-	prog->addUniform("lightPos");
-	prog->addUniform("lightColor");
-	prog->addUniform("ke");
-	prog->addUniform("kd");
-	prog->addUniform("ks");
-	prog->addUniform("s");
-	prog->addUniform("polar");
-	prog->addUniform("t");
-	prog->addUniform("lights");
-	prog->addUniform("numLights");
-	prog->setVerbose(false);
+	progPass1 = make_shared<Program>();
+	progPass1->setShaderNames(RESOURCE_DIR + "pass1_vert.glsl", RESOURCE_DIR + "pass1_frag.glsl");
+	progPass1->setVerbose(true);
+	progPass1->init();
+	progPass1->addAttribute("aPos");
+	progPass1->addAttribute("aNor");
+	progPass1->addUniform("P");
+	progPass1->addUniform("MV");
+	progPass1->addUniform("invMV");
+	progPass1->addUniform("ke");
+	progPass1->addUniform("kd");
+	progPass1->setVerbose(false);
+
+	progPass2 = make_shared<Program>();
+	progPass2->setShaderNames(RESOURCE_DIR + "pass2_vert.glsl", RESOURCE_DIR + "pass2_frag.glsl");
+	progPass2->setVerbose(true);
+	progPass2->init();
+	progPass2->addAttribute("aPos");
+	progPass2->addUniform("P");
+	progPass2->addUniform("MV");
+	progPass2->addUniform("posTexture");
+	progPass2->addUniform("norTexture");
+	progPass2->addUniform("keTexture");
+	progPass2->addUniform("kdTexture");
+	progPass2->addUniform("windowSize");
+	progPass2->addUniform("lights");
+	progPass2->addUniform("numLights");
+	progPass2->addUniform("camMV");
+	progPass2->bind();
+	glUniform1i(progPass2->getUniform("posTexture"), 0);
+	glUniform1i(progPass2->getUniform("norTexture"), 1);
+	glUniform1i(progPass2->getUniform("keTexture"), 2);
+	glUniform1i(progPass2->getUniform("kdTexture"), 3);
+	progPass2->unbind();
+	progPass2->setVerbose(false);
+
+	glGenFramebuffers(1, &framebufferID);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
+
+	glGenTextures(1, &posTexture);
+	glBindTexture(GL_TEXTURE_2D, posTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, textureWidth, textureHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, posTexture, 0);
+
+	glGenTextures(1, &norTexture);
+	glBindTexture(GL_TEXTURE_2D, norTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, textureWidth, textureHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, norTexture, 0);
+
+	glGenTextures(1, &keTexture);
+	glBindTexture(GL_TEXTURE_2D, keTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, textureWidth, textureHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, keTexture, 0);
+
+	glGenTextures(1, &kdTexture);
+	glBindTexture(GL_TEXTURE_2D, kdTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, textureWidth, textureHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, kdTexture, 0);
+
+	GLuint depthrenderbuffer;
+	glGenRenderbuffers(1, &depthrenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, textureWidth, textureHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+	GLenum attachments[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+	glDrawBuffers(4, attachments);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		cerr << "Framebuffer is not ok" << endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+	//prog = make_shared<Program>();
+	//prog->setShaderNames(RESOURCE_DIR + "blph_vert.glsl", RESOURCE_DIR + "blph_frag.glsl");
+	//prog->setVerbose(true);
+	//prog->init();
+	//prog->addAttribute("aPos");
+	//prog->addAttribute("aNor");
+	//prog->addUniform("MV");
+	//prog->addUniform("invMV");
+	//prog->addUniform("camMV");
+	//prog->addUniform("P");
+	//prog->addUniform("lightPos");
+	//prog->addUniform("lightColor");
+	//prog->addUniform("ke");
+	//prog->addUniform("kd");
+	//prog->addUniform("ks");
+	//prog->addUniform("s");
+	//prog->addUniform("polar");
+	//prog->addUniform("t");
+	//prog->addUniform("lights");
+	//prog->addUniform("numLights");
+	//prog->setVerbose(false);
 
 	camera = make_shared<Camera>();
 	camera->setInitDistance(20.0f); // FreelookCam's initial Z translation
@@ -184,6 +290,10 @@ static void init()
 	plane = make_shared<Shape>();
 	plane->loadMesh(RESOURCE_DIR + "plane.obj");
 	plane->init();
+
+	cube = make_shared<Shape>();
+	cube->loadMesh(RESOURCE_DIR + "cube.obj");
+	cube->init();
 
 	sphere = make_shared<Shape>();
 	
@@ -303,6 +413,50 @@ static void init()
 	revolution->loadPoints(rvPosBuf, rvNorBuf, rvTexBuf, rvIndBuf);
 	revolution->init();
 
+	vector<float> sqPosBuf;
+	vector<float> sqNorBuf;
+	vector<float> sqTexBuf;
+	vector<unsigned int> sqIndBuf;
+
+	sqPosBuf.push_back(-0.5f);
+	sqPosBuf.push_back(-0.5f);
+	sqPosBuf.push_back(0.0f);
+	sqNorBuf.push_back(0.0f);
+	sqNorBuf.push_back(0.0f);
+	sqNorBuf.push_back(1.0f);
+
+	sqPosBuf.push_back(-0.5f);
+	sqPosBuf.push_back(0.5f);
+	sqPosBuf.push_back(0.0f);
+	sqNorBuf.push_back(0.0f);
+	sqNorBuf.push_back(0.0f);
+	sqNorBuf.push_back(1.0f);
+
+	sqPosBuf.push_back(0.5f);
+	sqPosBuf.push_back(-0.5f);
+	sqPosBuf.push_back(0.0f);
+	sqNorBuf.push_back(0.0f);
+	sqNorBuf.push_back(0.0f);
+	sqNorBuf.push_back(1.0f);
+
+	sqPosBuf.push_back(0.5f);
+	sqPosBuf.push_back(0.5f);
+	sqPosBuf.push_back(0.0f);
+	sqNorBuf.push_back(0.0f);
+	sqNorBuf.push_back(0.0f);
+	sqNorBuf.push_back(1.0f);
+
+	sqIndBuf.push_back(0);
+	sqIndBuf.push_back(1);
+	sqIndBuf.push_back(3);
+
+	sqIndBuf.push_back(0);
+	sqIndBuf.push_back(2);
+	sqIndBuf.push_back(3);
+
+	square = make_shared<Shape>();
+	square->loadPoints(sqPosBuf, sqNorBuf, sqTexBuf, sqIndBuf);
+	square->init();
 
 	GLSL::checkError(GET_FILE_LINE);
 
@@ -378,105 +532,234 @@ static void render()
 	glfwGetFramebufferSize(window, &width, &height);
 	float aspect = (float)width/(float)height;
 	camera->setAspect(aspect);
+
+	//cout << width << " " << height << endl;
 	
 	double t = glfwGetTime();
 	
 	// Matrix stacks
 	auto P = make_shared<MatrixStack>();
 	auto MV = make_shared<MatrixStack>();
-	
-	prog->bind();
-
-	glViewport(0, 0, width, height);
-
 	glm::mat4 invMV;
 
-	glUniform1f(prog->getUniform("t"), 0.0f);
 
-	// draw scene
-	P->pushMatrix();
-	camera->applyProjectionMatrix(P);
-	MV->pushMatrix();
-		camera->applyViewMatrix(MV);
-		glm::mat4 camMV = MV->topMatrix();
+	glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
+	glViewport(0, 0, textureWidth, textureHeight);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glUniformMatrix4fv(prog->getUniform("camMV"), 1, GL_FALSE, glm::value_ptr(camMV));
-
-		MV->translate(0.0f, -1.0f, 0.0f);
-	
-		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-
-		MV->pushMatrix();
-			glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
-			glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
-			glUniform1f(prog->getUniform("s"), 0.0f);
-
-			for (int i = 0; i < lightVec.size(); i++) {
-				shared_ptr<Light> l = lightVec.at(i);
-				l->update(t);
-
-				lights[2 * i] = l->lightPos;
-
-				MV->pushMatrix();
-				MV->translate(l->lightPos);
-				MV->scale(0.1f, 0.1f, 0.1f);
-				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
-
-				glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-				glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-				glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-
-				glUniform3f(prog->getUniform("ke"), l->color.x, l->color.y, l->color.z);
-				sphere->draw(prog);
-				MV->popMatrix();
-			}
-
-			glUniform3fv(prog->getUniform("lights"), numLights * 2, value_ptr(lights[0]));
-			glUniform1i(prog->getUniform("numLights"), numLights);
-
-			for (shared_ptr<Thing> th : thingVec) {
-				MV->pushMatrix();
-					MV->translate(th->initPos);
-					MV->scale(th->initScale);
-					MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
-					MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
-					th->update(MV, t);
-
-					invMV = glm::transpose(glm::inverse(MV->topMatrix()));
-
-					glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-					glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-					glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-
-					glUniform3f(prog->getUniform("ke"), th->material.ke.x, th->material.ke.y, th->material.ke.z);
-					glUniform3f(prog->getUniform("kd"), th->material.kd.x, th->material.kd.y, th->material.kd.z);
-					glUniform3f(prog->getUniform("ks"), th->material.ks.x, th->material.ks.y, th->material.ks.z);
-					glUniform1f(prog->getUniform("s"), th->material.s);
-
-					th->draw(prog);
-				MV->popMatrix();
-			}
-
+	progPass1->bind();
+		P->pushMatrix();
+		camera->applyProjectionMatrix(P);
 			MV->pushMatrix();
-				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+			camera->applyViewMatrix(MV);
+				glm::mat4 camMV = MV->topMatrix();
+				MV->translate(0.0f, -1.0f, 0.0f);
+				glUniformMatrix4fv(progPass1->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+				glUniformMatrix4fv(progPass1->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 
-				glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-				glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-				glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+				MV->pushMatrix();
+					// draw lights
+					//glUniform3f(progPass1->getUniform("kd"), 0.0f, 0.0f, 0.0f);
+					//glUniform3f(progPass1->getUniform("ks"), 0.0f, 0.0f, 0.0f);
+					//glUniform1f(progPass1->getUniform("s"), 0.0f);
+					for (int i = 0; i < lightVec.size(); i++) {
+						shared_ptr<Light> l = lightVec.at(i);
+						l->update(t);
 
-				glUniform3f(prog->getUniform("ke"), 0.0f, 0.0f, 0.0f);
-				glUniform3f(prog->getUniform("kd"), 0.5f, 0.5f, 0.5f);
-				glUniform3f(prog->getUniform("ks"), 1.0f, 1.0f, 1.0f);
-				glUniform1f(prog->getUniform("s"), 10.0f);
+						lights[2 * i] = l->lightPos;
 
-				plane->draw(prog);
+						MV->pushMatrix();
+							MV->translate(l->lightPos);
+							MV->scale(0.1f, 0.1f, 0.1f);
+							invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+
+							glUniformMatrix4fv(progPass1->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+							glUniformMatrix4fv(progPass1->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+							glUniformMatrix4fv(progPass1->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+
+							glUniform3f(progPass1->getUniform("ke"), l->color.x, l->color.y, l->color.z);
+							sphere->draw(progPass1);
+						MV->popMatrix();
+					}
+
+					// draw things
+					for (shared_ptr<Thing> th : thingVec) {
+						MV->pushMatrix();
+							MV->translate(th->initPos);
+							MV->scale(th->initScale);
+							MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
+							MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
+							th->update(MV, t);
+
+							invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+
+							glUniformMatrix4fv(progPass1->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+							glUniformMatrix4fv(progPass1->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+							glUniformMatrix4fv(progPass1->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+
+							glUniform3f(progPass1->getUniform("ke"), th->material.ke.x, th->material.ke.y, th->material.ke.z);
+							glUniform3f(progPass1->getUniform("kd"), th->material.kd.x, th->material.kd.y, th->material.kd.z);
+							//glUniform3f(progPass1->getUniform("ks"), th->material.ks.x, th->material.ks.y, th->material.ks.z);
+							//glUniform1f(progPass1->getUniform("s"), th->material.s);
+
+							th->draw(progPass1);
+						MV->popMatrix();
+					}
+
+					// draw floor
+					MV->pushMatrix();
+						invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+
+						glUniformMatrix4fv(progPass1->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+						glUniformMatrix4fv(progPass1->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+						glUniformMatrix4fv(progPass1->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+
+						glUniform3f(progPass1->getUniform("ke"), 0.0f, 0.0f, 0.0f);
+						glUniform3f(progPass1->getUniform("kd"), 0.5f, 0.5f, 0.5f);
+						//glUniform3f(progPass1->getUniform("ks"), 1.0f, 1.0f, 1.0f);
+						//glUniform1f(progPass1->getUniform("s"), 10.0f);
+
+						plane->draw(progPass1);
+					MV->popMatrix();
+				MV->popMatrix();
 			MV->popMatrix();
-		MV->popMatrix();
-	MV->popMatrix();
-	P->popMatrix();
+		P->popMatrix();
+	progPass1->unbind();
 
-	prog->unbind();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, textureWidth, textureHeight);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	progPass2->bind();
+
+		P->pushMatrix();
+		camera->applyProjectionMatrix(P);
+			MV->pushMatrix();
+			//camera->applyViewMatrix(MV);
+				MV->translate(0.0, 0.0, -5.0);
+				MV->scale(3.0, 3.0, 3.0);
+
+				glUniformMatrix4fv(progPass2->getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
+				glUniformMatrix4fv(progPass2->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
+				glm::vec2 wSize((float)width, float(height));
+				glUniform2f(progPass2->getUniform("windowSize"), (float)width, (float)height);
+
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, posTexture);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, norTexture);
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_2D, keTexture);
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_2D, kdTexture);
+
+				
+				square->draw(progPass2);
+
+				glActiveTexture(GL_TEXTURE0);
+			MV->popMatrix();
+		P->popMatrix();
+		
+	progPass2->unbind();
+
+
+	
+	//prog->bind();
+
+	//	glViewport(0, 0, width, height);
+
+	//	
+
+	//	glUniform1f(prog->getUniform("t"), 0.0f);
+
+	//	// draw scene
+	//	P->pushMatrix();
+	//	camera->applyProjectionMatrix(P);
+	//	MV->pushMatrix();
+	//		camera->applyViewMatrix(MV);
+	//		glm::mat4 camMV = MV->topMatrix();
+
+	//		glUniformMatrix4fv(prog->getUniform("camMV"), 1, GL_FALSE, glm::value_ptr(camMV));
+
+	//		MV->translate(0.0f, -1.0f, 0.0f);
+	//
+	//		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	//		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+
+	//		MV->pushMatrix();
+	//			glUniform3f(prog->getUniform("kd"), 0.0f, 0.0f, 0.0f);
+	//			glUniform3f(prog->getUniform("ks"), 0.0f, 0.0f, 0.0f);
+	//			glUniform1f(prog->getUniform("s"), 0.0f);
+
+	//			for (int i = 0; i < lightVec.size(); i++) {
+	//				shared_ptr<Light> l = lightVec.at(i);
+	//				l->update(t);
+
+	//				lights[2 * i] = l->lightPos;
+
+	//				MV->pushMatrix();
+	//				MV->translate(l->lightPos);
+	//				MV->scale(0.1f, 0.1f, 0.1f);
+	//				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+
+	//				glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	//				glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	//				glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+
+	//				glUniform3f(prog->getUniform("ke"), l->color.x, l->color.y, l->color.z);
+	//				sphere->draw(prog);
+	//				MV->popMatrix();
+	//			}
+
+	//			glUniform3fv(prog->getUniform("lights"), numLights * 2, value_ptr(lights[0]));
+	//			glUniform1i(prog->getUniform("numLights"), numLights);
+
+	//			for (shared_ptr<Thing> th : thingVec) {
+	//				MV->pushMatrix();
+	//					MV->translate(th->initPos);
+	//					MV->scale(th->initScale);
+	//					MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
+	//					MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
+	//					th->update(MV, t);
+
+	//					invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+
+	//					glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	//					glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	//					glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+
+	//					glUniform3f(prog->getUniform("ke"), th->material.ke.x, th->material.ke.y, th->material.ke.z);
+	//					glUniform3f(prog->getUniform("kd"), th->material.kd.x, th->material.kd.y, th->material.kd.z);
+	//					glUniform3f(prog->getUniform("ks"), th->material.ks.x, th->material.ks.y, th->material.ks.z);
+	//					glUniform1f(prog->getUniform("s"), th->material.s);
+
+	//					th->draw(prog);
+	//				MV->popMatrix();
+	//			}
+
+	//			MV->pushMatrix();
+	//				invMV = glm::transpose(glm::inverse(MV->topMatrix()));
+
+	//				glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	//				glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	//				glUniformMatrix4fv(prog->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
+
+	//				glUniform3f(prog->getUniform("ke"), 0.0f, 0.0f, 0.0f);
+	//				glUniform3f(prog->getUniform("kd"), 0.5f, 0.5f, 0.5f);
+	//				glUniform3f(prog->getUniform("ks"), 1.0f, 1.0f, 1.0f);
+	//				glUniform1f(prog->getUniform("s"), 10.0f);
+
+	//				plane->draw(prog);
+	//			MV->popMatrix();
+	//		MV->popMatrix();
+	//	MV->popMatrix();
+	//	P->popMatrix();
+
+	//prog->unbind();
 	
 	GLSL::checkError(GET_FILE_LINE);
 	
