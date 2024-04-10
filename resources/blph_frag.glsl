@@ -31,8 +31,6 @@ void main()
 
 		float r = length(lpos - position);
 		float att = 1.0 / (1.0 + 0.0429 * r + 0.9857 * pow(r, 2));
-		//float att = 1.0;
-
 
 		fragColor += color * att;
 	}
