@@ -190,6 +190,7 @@ static void init()
 	progPass2->addUniform("lights");
 	progPass2->addUniform("numLights");
 	progPass2->addUniform("camMV");
+	progPass2->addUniform("blur");
 	progPass2->bind();
 	glUniform1i(progPass2->getUniform("posTexture"), 0);
 	glUniform1i(progPass2->getUniform("norTexture"), 1);
@@ -635,18 +636,29 @@ static void render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	progPass2->bind();
+		if (keyToggles[(unsigned)'b']) {
+			glUniform1i(progPass2->getUniform("blur"), true);
+		}
+		else {
+			glUniform1i(progPass2->getUniform("blur"), false);
+		}
 
 		P->pushMatrix();
 		camera->applyProjectionMatrix(P);
+		
 			MV->pushMatrix();
 			//camera->applyViewMatrix(MV);
 				MV->translate(0.0, 0.0, -5.0);
-				MV->scale(3.0, 3.0, 3.0);
+				float sc = 7.0;
+				MV->scale(sc, sc, sc);
 
 				glUniformMatrix4fv(progPass2->getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
 				glUniformMatrix4fv(progPass2->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
 				glm::vec2 wSize((float)width, float(height));
 				glUniform2f(progPass2->getUniform("windowSize"), (float)width, (float)height);
+				glUniformMatrix4fv(progPass2->getUniform("camMV"), 1, GL_FALSE, glm::value_ptr(camMV));
+				glUniform3fv(progPass2->getUniform("lights"), numLights * 2, value_ptr(lights[0]));
+				glUniform1i(progPass2->getUniform("numLights"), numLights);
 
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_2D, posTexture);
