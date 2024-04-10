@@ -243,7 +243,7 @@ static void init()
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, textureWidth, textureHeight);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 
-	GLenum attachments[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+	GLenum attachments[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 	glDrawBuffers(4, attachments);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -561,7 +561,7 @@ static void render()
 
 				MV->pushMatrix();
 					// draw lights
-					//glUniform3f(progPass1->getUniform("kd"), 0.0f, 0.0f, 0.0f);
+					glUniform3f(progPass1->getUniform("kd"), 0.0f, 0.0f, 0.0f);
 					//glUniform3f(progPass1->getUniform("ks"), 0.0f, 0.0f, 0.0f);
 					//glUniform1f(progPass1->getUniform("s"), 0.0f);
 					for (int i = 0; i < lightVec.size(); i++) {
@@ -617,7 +617,7 @@ static void render()
 						glUniformMatrix4fv(progPass1->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
 
 						glUniform3f(progPass1->getUniform("ke"), 0.0f, 0.0f, 0.0f);
-						glUniform3f(progPass1->getUniform("kd"), 0.5f, 0.5f, 0.5f);
+						glUniform3f(progPass1->getUniform("kd"), 1.0f, 1.0f, 1.0f);
 						//glUniform3f(progPass1->getUniform("ks"), 1.0f, 1.0f, 1.0f);
 						//glUniform1f(progPass1->getUniform("s"), 10.0f);
 
@@ -654,7 +654,7 @@ static void render()
 				glBindTexture(GL_TEXTURE_2D, norTexture);
 				glActiveTexture(GL_TEXTURE2);
 				glBindTexture(GL_TEXTURE_2D, keTexture);
-				glActiveTexture(GL_TEXTURE2);
+				glActiveTexture(GL_TEXTURE3);
 				glBindTexture(GL_TEXTURE_2D, kdTexture);
 
 				
