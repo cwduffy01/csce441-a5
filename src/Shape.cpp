@@ -17,12 +17,47 @@ Shape::Shape() :
 	posBufID(0),
 	norBufID(0),
 	texBufID(0),
-	indBufID(0)
+	indBufID(0),
+	miny(0.0f),
+	polar(false)
 {
 }
 
 Shape::~Shape()
 {
+}
+
+float findYMin(vector<float>& posBuf, bool polar) {
+	float miny;
+	if (polar) {
+		miny = 0.0;
+
+		for (int i = 0; i < posBuf.size(); i += 3) {
+			float x = posBuf.at(i);
+			float theta = posBuf.at(i + 1);
+
+
+			float c = 0.2;
+			float s = 5;
+			float h = 2;
+
+
+			float f = c * (cos(s * x) + h);
+			float y = f * cos(theta);
+
+			if (x < miny) { miny = x; }
+		}
+	}
+	else {
+		int yidx = 1;
+		miny = posBuf.at(yidx);
+		while (yidx < posBuf.size()) {
+			if (posBuf.at(yidx) < miny) { miny = posBuf.at(yidx); }
+			yidx += 3;
+		}
+
+	}
+	return miny;
 }
 
 void Shape::loadMesh(const string &meshName)
@@ -69,12 +104,9 @@ void Shape::loadMesh(const string &meshName)
 			}
 		}
 	}
-	int yidx = 1;
-	this->miny = posBuf.at(yidx);
-	while (yidx < posBuf.size()) {
-		if (posBuf.at(yidx) < this->miny) { this->miny = posBuf.at(yidx); }
-		yidx += 3;
-	}
+
+	this->miny = findYMin(posBuf, polar);
+
 }
 
 void Shape::loadPoints(std::vector<float> pBuf, std::vector<float> nBuf, std::vector<float> tBuf, std::vector<unsigned int> iBuf) {
@@ -83,12 +115,7 @@ void Shape::loadPoints(std::vector<float> pBuf, std::vector<float> nBuf, std::ve
 	if (tBuf.size() > 0) { texBuf = tBuf; }
 	if (iBuf.size() > 0) { indBuf = iBuf; }
 
-	int yidx = 1;
-	this->miny = posBuf.at(yidx);
-	while (yidx < posBuf.size()) {
-		if (posBuf.at(yidx) < this->miny) { this->miny = posBuf.at(yidx); }
-		yidx += 3;
-	}
+	this->miny = findYMin(posBuf, polar);
 }
 
 void Shape::fitToUnitBox()

@@ -33,6 +33,7 @@ public:
 	void setIndBuf(std::vector<unsigned int>& iBuf);
 
 	float miny;
+	bool polar;
 	
 private:
 	std::vector<float> posBuf;

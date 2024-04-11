@@ -71,6 +71,8 @@ GLuint posTexture;
 GLuint norTexture;
 GLuint keTexture;
 GLuint kdTexture;
+
+GLuint depthrenderbuffer;
 int textureWidth = 640;
 int textureHeight = 480;
 
@@ -179,6 +181,8 @@ static void init()
 	progPass1->addUniform("invMV");
 	progPass1->addUniform("ke");
 	progPass1->addUniform("kd");
+	progPass1->addUniform("t");
+	progPass1->addUniform("tOff");
 	progPass1->setVerbose(false);
 
 	progPass2 = make_shared<Program>();
@@ -209,9 +213,12 @@ static void init()
 	glGenFramebuffers(1, &framebufferID);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
 
+	int width, height;
+	glfwGetFramebufferSize(window, &width, &height);
+
 	glGenTextures(1, &posTexture);
 	glBindTexture(GL_TEXTURE_2D, posTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, textureWidth, textureHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -220,7 +227,7 @@ static void init()
 
 	glGenTextures(1, &norTexture);
 	glBindTexture(GL_TEXTURE_2D, norTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, textureWidth, textureHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -229,7 +236,7 @@ static void init()
 
 	glGenTextures(1, &keTexture);
 	glBindTexture(GL_TEXTURE_2D, keTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, textureWidth, textureHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -238,17 +245,17 @@ static void init()
 
 	glGenTextures(1, &kdTexture);
 	glBindTexture(GL_TEXTURE_2D, kdTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, textureWidth, textureHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, kdTexture, 0);
 
-	GLuint depthrenderbuffer;
+	//GLuint depthrenderbuffer;
 	glGenRenderbuffers(1, &depthrenderbuffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, textureWidth, textureHeight);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 
 	GLenum attachments[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
@@ -275,21 +282,21 @@ static void init()
 	vector<float> spNorBuf;
 	vector<float> spTexBuf;
 	vector<unsigned int> spIndBuf;
-	float height = 1.0;
-	float width = 1.0;
+	float spheight = 1.0;
+	float spwidth = 1.0;
 	int num_rows = 100;
 	int num_cols = 100;
 
 	for (int i = 0; i <= num_rows; i++) {
-		float v = i / (float)num_rows * height;
+		float v = i / (float)num_rows * spheight;
 		float phi = v * M_PI;
 		for (int j = 0; j <= num_cols; j++) {
-			float u = j / (float)num_cols * width;
+			float u = j / (float)num_cols * spwidth;
 			float theta = u * 2 * M_PI;
 
-			float x = sin(theta) * sin(phi) * width / 2;
-			float y = cos(theta) * height / 2;
-			float z = sin(theta) * cos(phi) * width / 2;
+			float x = sin(theta) * sin(phi) * spwidth / 2;
+			float y = cos(theta) * spheight / 2;
+			float z = sin(theta) * cos(phi) * spwidth / 2;
 
 			spPosBuf.push_back(x);
 			spPosBuf.push_back(y);
@@ -326,36 +333,42 @@ static void init()
 	vector<float> rvNorBuf;
 	vector<float> rvTexBuf;
 	vector<unsigned int> rvIndBuf;
-	width = 2.0;
+	float rvwidth = 2.0;
 
 	for (int i = 0; i <= num_cols; i++) {
 		float u = i / (float)num_cols;
-		float x = u * width - width / 2;
+		float x = u * rvwidth - rvwidth / 2;
 		for (int j = 0; j <= num_rows; j++) {
 			float v = j / (float)num_rows;
 			float theta = v * 2 * M_PI;
 
-			float c = 0.2;
-			float s = 5;
-			float h = 2;
+			//float c = 0.2;
+			//float s = 5;
+			//float h = 2;
 
-			float f = c * (cos(s * x) + h);
-			float y = f * cos(theta);
-			float z = f * sin(theta);
+			//float f = c * (cos(s * x) + h);
+			//float y = f * cos(theta);
+			//float z = f * sin(theta);
 
-			glm::vec3 dpdx(
-				1.0f,
-				-c * s * sin(s * x) * cos(theta),
-				-c * s * sin(s * x) * sin(theta)
-			);
+			//glm::vec3 dpdx(
+			//	1.0f,
+			//	-c * s * sin(s * x) * cos(theta),
+			//	-c * s * sin(s * x) * sin(theta)
+			//);
 
-			glm::vec3 dpdt(
-				0.0f,
-				-c * (cos(s * x) + h) * sin(theta),
-				 c * (cos(s * x) + h) * cos(theta)
-			);
+			//glm::vec3 dpdt(
+			//	0.0f,
+			//	-c * (cos(s * x) + h) * sin(theta),
+			//	 c * (cos(s * x) + h) * cos(theta)
+			//);
 
-			glm::vec3 n = glm::normalize(glm::cross(dpdt, dpdx));
+			//glm::vec3 n = glm::normalize(glm::cross(dpdt, dpdx));
+
+			float y = x;
+			float x = theta;
+			float z = 0.0;
+
+			glm::vec3 n(0.0f, 0.0f, 0.0f);
 			
 
 			rvPosBuf.push_back(y);
@@ -386,6 +399,7 @@ static void init()
 	}
 
 	revolution = make_shared<Shape>();
+	revolution->polar = true;
 	revolution->loadPoints(rvPosBuf, rvNorBuf, rvTexBuf, rvIndBuf);
 	revolution->init();
 
@@ -538,7 +552,7 @@ static void init()
 	}
 
 	progPass2->bind();
-	glUniform1i(progPass2->getUniform("renderMode"), render_mode::KD_TEXTURE);
+	glUniform1i(progPass2->getUniform("renderMode"), render_mode::NOR_TEXTURE);
 	progPass2->unbind();
 }
 
@@ -558,7 +572,7 @@ static void render()
 	glfwGetFramebufferSize(window, &width, &height);
 	float aspect = (float)width/(float)height;
 	camera->setAspect(aspect);
-	
+
 	double t = glfwGetTime();
 	
 	// Matrix stacks
@@ -568,12 +582,13 @@ static void render()
 
 
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
-	glViewport(0, 0, textureWidth, textureHeight);
+	glViewport(0, 0, width, height);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	progPass1->bind();
+		glUniform1f(progPass1->getUniform("t"), t);
 		P->pushMatrix();
 		camera->applyProjectionMatrix(P);
 			MV->pushMatrix();
@@ -612,7 +627,12 @@ static void render()
 							MV->translate(th->initPos);
 							MV->scale(th->initScale);
 							MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
-							MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
+							if (th->type == Thing::REVOLUTION) {
+								MV->rotate(M_PI_2, 0.0, 0.0, 1.0);
+							}
+							else {
+								MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
+							}
 							th->update(MV, t);
 
 							invMV = glm::transpose(glm::inverse(MV->topMatrix()));
@@ -623,6 +643,8 @@ static void render()
 
 							glUniform3f(progPass1->getUniform("ke"), th->material.ke.x, th->material.ke.y, th->material.ke.z);
 							glUniform3f(progPass1->getUniform("kd"), th->material.kd.x, th->material.kd.y, th->material.kd.z);
+
+							glUniform1f(progPass1->getUniform("tOff"), th->timeShift);
 
 							th->draw(progPass1);
 						MV->popMatrix();
@@ -647,7 +669,7 @@ static void render()
 	progPass1->unbind();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, textureWidth, textureHeight);
+	glViewport(0, 0, width, height);
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -663,7 +685,6 @@ static void render()
 		P->pushMatrix();
 		camera->applyProjectionMatrix(P);
 			MV->pushMatrix();
-			//camera->applyViewMatrix(MV);
 				MV->translate(0.0, 0.0, -5.0);
 				float sc = 7.0;
 				MV->scale(sc, sc, sc);
@@ -705,7 +726,7 @@ static void render()
 int main(int argc, char **argv)
 {
 	if(argc < 2) {
-		cout << "Usage: A3 RESOURCE_DIR" << endl;
+		cout << "Usage: A5 RESOURCE_DIR" << endl;
 		return 0;
 	}
 	RESOURCE_DIR = argv[1] + string("/");
@@ -722,7 +743,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	// Create a windowed mode window and its OpenGL context.
-	window = glfwCreateWindow(640, 480, "YOUR NAME", NULL, NULL);
+	window = glfwCreateWindow(640, 480, "CARSON DUFFY", NULL, NULL);
 	if(!window) {
 		glfwTerminate();
 		return -1;

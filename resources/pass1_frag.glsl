@@ -6,6 +6,7 @@ varying vec3 vNor; // in camera space
 uniform vec3 ke;
 uniform vec3 kd;
 
+
 void main()
 {
     gl_FragData[0].xyz = vPos;

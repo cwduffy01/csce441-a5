@@ -30,9 +30,10 @@ public:
 
 	void draw(const std::shared_ptr<Program> prog);
 
+	float timeShift;
+
 private:
 	float scaleFactor;
-	float timeShift;
 };
 
 #endif // !THING_H
