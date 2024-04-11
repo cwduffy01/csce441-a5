@@ -542,7 +542,7 @@ static void init()
 
 	// set render mode for image (task 6)
 	progPass2->bind();
-	glUniform1i(progPass2->getUniform("renderMode"), render_mode::POS_TEXTURE);
+	glUniform1i(progPass2->getUniform("renderMode"), render_mode::DEFAULT);
 	progPass2->unbind();
 
 	GLSL::checkError(GET_FILE_LINE);
@@ -573,6 +573,10 @@ static void render()
 	glm::mat4 invMV;
 
 
+	////////////////////////////////////////////////////////////////
+	// RENDER PASS 1
+	////////////////////////////////////////////////////////////////
+
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
 	glViewport(0, 0, width, height);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -591,12 +595,12 @@ static void render()
 				glUniformMatrix4fv(progPass1->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 
 				MV->pushMatrix();
+
 					// draw lights
 					glUniform3f(progPass1->getUniform("kd"), 0.0f, 0.0f, 0.0f);
 					for (int i = 0; i < lightVec.size(); i++) {
 						shared_ptr<Light> l = lightVec.at(i);
 						l->update(t);
-
 						lights[2 * i] = l->lightPos;
 
 						MV->pushMatrix();
@@ -607,8 +611,8 @@ static void render()
 							glUniformMatrix4fv(progPass1->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 							glUniformMatrix4fv(progPass1->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 							glUniformMatrix4fv(progPass1->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-
 							glUniform3f(progPass1->getUniform("ke"), l->color.x, l->color.y, l->color.z);
+
 							sphere->draw(progPass1);
 						MV->popMatrix();
 					}
@@ -619,12 +623,16 @@ static void render()
 							MV->translate(th->initPos);
 							MV->scale(th->initScale);
 							MV->translate(glm::vec3(0.0f, -th->shape->miny, 0.0f));
+
+							// determine rotation angle (all revolutions need to be rotated upright
 							if (th->type == Thing::REVOLUTION) {
 								MV->rotate(M_PI_2, 0.0, 0.0, 1.0);
 							}
 							else {
 								MV->rotate(th->initRotY, 0.0, 1.0, 0.0);
 							}
+
+							// update animations for cpu objects
 							th->update(MV, t);
 
 							invMV = glm::transpose(glm::inverse(MV->topMatrix()));
@@ -632,10 +640,8 @@ static void render()
 							glUniformMatrix4fv(progPass1->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 							glUniformMatrix4fv(progPass1->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 							glUniformMatrix4fv(progPass1->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-
 							glUniform3f(progPass1->getUniform("ke"), th->material.ke.x, th->material.ke.y, th->material.ke.z);
 							glUniform3f(progPass1->getUniform("kd"), th->material.kd.x, th->material.kd.y, th->material.kd.z);
-
 							glUniform1f(progPass1->getUniform("tOff"), th->timeShift);
 
 							th->draw(progPass1);
@@ -649,16 +655,21 @@ static void render()
 						glUniformMatrix4fv(progPass1->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 						glUniformMatrix4fv(progPass1->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 						glUniformMatrix4fv(progPass1->getUniform("invMV"), 1, GL_FALSE, glm::value_ptr(invMV));
-
 						glUniform3f(progPass1->getUniform("ke"), 0.0f, 0.0f, 0.0f);
 						glUniform3f(progPass1->getUniform("kd"), 1.0f, 1.0f, 1.0f);
 
 						ground->draw(progPass1);
 					MV->popMatrix();
+
 				MV->popMatrix();
 			MV->popMatrix();
 		P->popMatrix();
 	progPass1->unbind();
+
+
+	////////////////////////////////////////////////////////////////
+	// RENDER PASS 2
+	////////////////////////////////////////////////////////////////
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, width, height);
@@ -667,23 +678,19 @@ static void render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	progPass2->bind();
-		if (keyToggles[(unsigned)'b']) {
-			glUniform1i(progPass2->getUniform("blur"), true);
-		}
-		else {
-			glUniform1i(progPass2->getUniform("blur"), false);
-		}
+		// toggle blur
+		if (keyToggles[(unsigned)'b']) { glUniform1i(progPass2->getUniform("blur"), true); }
+		else { glUniform1i(progPass2->getUniform("blur"), false); }
 
 		P->pushMatrix();
 		camera->applyProjectionMatrix(P);
 			MV->pushMatrix();
 				MV->translate(0.0, 0.0, -5.0);
-				float sc = 7.0;
+				float sc = 100.0;
 				MV->scale(sc, sc, sc);
 
 				glUniformMatrix4fv(progPass2->getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
 				glUniformMatrix4fv(progPass2->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
-				glm::vec2 wSize((float)width, float(height));
 				glUniform2f(progPass2->getUniform("windowSize"), (float)width, (float)height);
 				glUniformMatrix4fv(progPass2->getUniform("camMV"), 1, GL_FALSE, glm::value_ptr(camMV));
 				glUniform3fv(progPass2->getUniform("lights"), numLights * 2, value_ptr(lights[0]));
@@ -697,7 +704,6 @@ static void render()
 				glBindTexture(GL_TEXTURE_2D, keTexture);
 				glActiveTexture(GL_TEXTURE3);
 				glBindTexture(GL_TEXTURE_2D, kdTexture);
-
 				
 				square->draw(progPass2);
 
