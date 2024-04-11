@@ -32,36 +32,19 @@ string RESOURCE_DIR = "./"; // Where the resources are loaded from
 bool OFFLINE = false;
 
 shared_ptr<Camera> camera;
-shared_ptr<Program> prog;
-shared_ptr<Material> material;
+
 shared_ptr<Shape> bunny;
 shared_ptr<Shape> teapot;
 shared_ptr<Shape> sphere;
 shared_ptr<Shape> revolution;
-shared_ptr<Shape> plane;
-shared_ptr<Shape> cube;
-shared_ptr<Shape> frustum;
 shared_ptr<Shape> square;
 shared_ptr<Shape> ground;
-shared_ptr<Light> sun;
-glm::vec4 lightPos(0.0f, 2.0f, 0.0f, 1.0f);
 
 int numLights;
 glm::vec3 lights[256];
 
-vector<shared_ptr<Program>> progVec;
-vector<shared_ptr<Material>> mtrlVec;
 vector<shared_ptr<Thing>> thingVec;
 vector<shared_ptr<Light>> lightVec;
-
-Material hudMat;
-float fx;
-float fy;
-float scaleFactor;
-glm::vec3 hudLightPos;
-
-bool zoom;
-bool shift;
 
 shared_ptr<Program> progPass1;
 shared_ptr<Program> progPass2;
@@ -71,13 +54,11 @@ GLuint posTexture;
 GLuint norTexture;
 GLuint keTexture;
 GLuint kdTexture;
-
 GLuint depthrenderbuffer;
-int textureWidth = 640;
-int textureHeight = 480;
 
 bool keyToggles[256] = {false}; // only for English keyboards!
 
+// for toggling render output photos
 enum render_mode {
 	DEFAULT,
 	POS_TEXTURE,
@@ -170,6 +151,10 @@ static void init()
 	// Enable z-buffer test.
 	glEnable(GL_DEPTH_TEST);
 
+	////////////////////////////////////////////////////////////////
+	// CREATE PASS PROGRAMS 
+	////////////////////////////////////////////////////////////////
+	// initialize pass 1
 	progPass1 = make_shared<Program>();
 	progPass1->setShaderNames(RESOURCE_DIR + "pass1_vert.glsl", RESOURCE_DIR + "pass1_frag.glsl");
 	progPass1->setVerbose(true);
@@ -185,6 +170,7 @@ static void init()
 	progPass1->addUniform("tOff");
 	progPass1->setVerbose(false);
 
+	// initialize pass 2
 	progPass2 = make_shared<Program>();
 	progPass2->setShaderNames(RESOURCE_DIR + "pass2_vert.glsl", RESOURCE_DIR + "pass2_frag.glsl");
 	progPass2->setVerbose(true);
@@ -210,6 +196,9 @@ static void init()
 	progPass2->unbind();
 	progPass2->setVerbose(false);
 
+	////////////////////////////////////////////////////////////////
+	// GENERATE TEXTURES 
+	////////////////////////////////////////////////////////////////
 	glGenFramebuffers(1, &framebufferID);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
 
@@ -267,17 +256,11 @@ static void init()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	camera = make_shared<Camera>();
-	camera->setInitDistance(20.0f); // FreelookCam's initial Z translation
-	
-	bunny = make_shared<Shape>();
-	bunny->loadMesh(RESOURCE_DIR + "bunny.obj");
-	bunny->init();
+	////////////////////////////////////////////////////////////////
+	// ESTABLISH BUFFERS FOR MEMORY-STORED SHAPES
+	////////////////////////////////////////////////////////////////
 
-	teapot = make_shared<Shape>();
-	teapot->loadMesh(RESOURCE_DIR + "teapot.obj");
-	teapot->init();
-	
+	// points for sphere
 	vector<float> spPosBuf;
 	vector<float> spNorBuf;
 	vector<float> spTexBuf;
@@ -286,7 +269,6 @@ static void init()
 	float spwidth = 1.0;
 	int num_rows = 100;
 	int num_cols = 100;
-
 	for (int i = 0; i <= num_rows; i++) {
 		float v = i / (float)num_rows * spheight;
 		float phi = v * M_PI;
@@ -307,7 +289,6 @@ static void init()
 			spNorBuf.push_back(sin(theta) * cos(phi));
 		}
 	}
-
 	for (int i = 0; i < num_cols; i++) {
 		for (int j = 0; j < num_rows; j++) {
 			int v1 = (num_rows + 1) * i + j;
@@ -325,16 +306,12 @@ static void init()
 		}
 	}
 
-	sphere = make_shared<Shape>();
-	sphere->loadPoints(spPosBuf, spNorBuf, spTexBuf, spIndBuf);
-	sphere->init();
-
+	// points for revolution
 	vector<float> rvPosBuf;
 	vector<float> rvNorBuf;
 	vector<float> rvTexBuf;
 	vector<unsigned int> rvIndBuf;
 	float rvwidth = 2.0;
-
 	for (int i = 0; i <= num_cols; i++) {
 		float u = i / (float)num_cols;
 		float x = u * rvwidth - rvwidth / 2;
@@ -342,34 +319,12 @@ static void init()
 			float v = j / (float)num_rows;
 			float theta = v * 2 * M_PI;
 
-			//float c = 0.2;
-			//float s = 5;
-			//float h = 2;
-
-			//float f = c * (cos(s * x) + h);
-			//float y = f * cos(theta);
-			//float z = f * sin(theta);
-
-			//glm::vec3 dpdx(
-			//	1.0f,
-			//	-c * s * sin(s * x) * cos(theta),
-			//	-c * s * sin(s * x) * sin(theta)
-			//);
-
-			//glm::vec3 dpdt(
-			//	0.0f,
-			//	-c * (cos(s * x) + h) * sin(theta),
-			//	 c * (cos(s * x) + h) * cos(theta)
-			//);
-
-			//glm::vec3 n = glm::normalize(glm::cross(dpdt, dpdx));
-
 			float y = x;
 			float x = theta;
 			float z = 0.0;
 
 			glm::vec3 n(0.0f, 0.0f, 0.0f);
-			
+
 
 			rvPosBuf.push_back(y);
 			rvPosBuf.push_back(x);
@@ -380,7 +335,6 @@ static void init()
 			rvNorBuf.push_back(n.z);
 		}
 	}
-
 	for (int i = 0; i < num_cols; i++) {
 		for (int j = 0; j < num_rows; j++) {
 			int v1 = (num_rows + 1) * i + j;
@@ -398,11 +352,7 @@ static void init()
 		}
 	}
 
-	revolution = make_shared<Shape>();
-	revolution->polar = true;
-	revolution->loadPoints(rvPosBuf, rvNorBuf, rvTexBuf, rvIndBuf);
-	revolution->init();
-
+	// points for pass 2 square
 	vector<float> sqPosBuf;
 	vector<float> sqNorBuf;
 	vector<float> sqTexBuf;
@@ -444,58 +394,83 @@ static void init()
 	sqIndBuf.push_back(2);
 	sqIndBuf.push_back(3);
 
+	// points for ground
+	vector<float> grPosBuf;
+	vector<float> grNorBuf;
+	vector<float> grTexBuf;
+	vector<unsigned int> grIndBuf;
+	float fsize = 200.0;
+
+	grPosBuf.push_back(-fsize / 2);
+	grPosBuf.push_back(0.0f);
+	grPosBuf.push_back(-fsize / 2);
+	grNorBuf.push_back(0.0f);
+	grNorBuf.push_back(1.0f);
+	grNorBuf.push_back(0.0f);
+
+	grPosBuf.push_back(-fsize / 2);
+	grPosBuf.push_back(0.0f);
+	grPosBuf.push_back(fsize / 2);
+	grNorBuf.push_back(0.0f);
+	grNorBuf.push_back(1.0f);
+	grNorBuf.push_back(0.0f);
+
+	grPosBuf.push_back(fsize / 2);
+	grPosBuf.push_back(0.0f);
+	grPosBuf.push_back(-fsize / 2);
+	grNorBuf.push_back(0.0f);
+	grNorBuf.push_back(1.0f);
+	grNorBuf.push_back(0.0f);
+
+	grPosBuf.push_back(fsize / 2);
+	grPosBuf.push_back(0.0f);
+	grPosBuf.push_back(fsize / 2);
+	grNorBuf.push_back(0.0f);
+	grNorBuf.push_back(1.0f);
+	grNorBuf.push_back(0.0f);
+
+	grIndBuf.push_back(0);
+	grIndBuf.push_back(1);
+	grIndBuf.push_back(3);
+
+	grIndBuf.push_back(0);
+	grIndBuf.push_back(2);
+	grIndBuf.push_back(3);
+
+
+	////////////////////////////////////////////////////////////////
+	// CREATE SHAPES
+	////////////////////////////////////////////////////////////////
+	
+	bunny = make_shared<Shape>();
+	bunny->loadMesh(RESOURCE_DIR + "bunny.obj");
+	bunny->init();
+
+	teapot = make_shared<Shape>();
+	teapot->loadMesh(RESOURCE_DIR + "teapot.obj");
+	teapot->init();
+
+	sphere = make_shared<Shape>();
+	sphere->loadPoints(spPosBuf, spNorBuf, spTexBuf, spIndBuf);
+	sphere->init();
+
+	revolution = make_shared<Shape>();
+	revolution->polar = true;
+	revolution->loadPoints(rvPosBuf, rvNorBuf, rvTexBuf, rvIndBuf);
+	revolution->init();
+
 	square = make_shared<Shape>();
 	square->loadPoints(sqPosBuf, sqNorBuf, sqTexBuf, sqIndBuf);
 	square->init();
 
-	vector<float> flPosBuf;
-	vector<float> flNorBuf;
-	vector<float> flTexBuf;
-	vector<unsigned int> flIndBuf;
-	float fsize = 200.0;
-
-	flPosBuf.push_back(-fsize / 2);
-	flPosBuf.push_back(0.0f);
-	flPosBuf.push_back(-fsize / 2);
-	flNorBuf.push_back(0.0f);
-	flNorBuf.push_back(1.0f);
-	flNorBuf.push_back(0.0f);
-
-	flPosBuf.push_back(-fsize / 2);
-	flPosBuf.push_back(0.0f);
-	flPosBuf.push_back(fsize / 2);
-	flNorBuf.push_back(0.0f);
-	flNorBuf.push_back(1.0f);
-	flNorBuf.push_back(0.0f);
-
-	flPosBuf.push_back(fsize / 2);
-	flPosBuf.push_back(0.0f);
-	flPosBuf.push_back(-fsize / 2);
-	flNorBuf.push_back(0.0f);
-	flNorBuf.push_back(1.0f);
-	flNorBuf.push_back(0.0f);
-
-	flPosBuf.push_back(fsize / 2);
-	flPosBuf.push_back(0.0f);
-	flPosBuf.push_back(fsize / 2);
-	flNorBuf.push_back(0.0f);
-	flNorBuf.push_back(1.0f);
-	flNorBuf.push_back(0.0f);
-
-	flIndBuf.push_back(0);
-	flIndBuf.push_back(1);
-	flIndBuf.push_back(3);
-
-	flIndBuf.push_back(0);
-	flIndBuf.push_back(2);
-	flIndBuf.push_back(3);
-
-
 	ground = make_shared<Shape>();
-	ground->loadPoints(flPosBuf, flNorBuf, flTexBuf, flIndBuf);
+	ground->loadPoints(grPosBuf, grNorBuf, grTexBuf, grIndBuf);
 	ground->init();
 
-	GLSL::checkError(GET_FILE_LINE);
+
+	////////////////////////////////////////////////////////////////
+	// CREATE THINGS
+	////////////////////////////////////////////////////////////////
 
 	float spacing = 2.0;
 	int rowCount = 10;
@@ -508,18 +483,18 @@ static void init()
 		int num = (int)rand() % 4;
 
 		switch (num) {
-			case Thing::BUNNY:
-				thing = make_shared<Thing>(bunny.get(), Thing::BUNNY);
-				break;
-			case Thing::TEAPOT:
-				thing = make_shared<Thing>(teapot.get(), Thing::TEAPOT);
-				break;
-			case Thing::SPHERE:
-				thing = make_shared<Thing>(sphere.get(), Thing::SPHERE);
-				break;
-			case Thing::REVOLUTION:
-				thing = make_shared<Thing>(revolution.get(), Thing::REVOLUTION);
-				break;
+		case Thing::BUNNY:
+			thing = make_shared<Thing>(bunny.get(), Thing::BUNNY);
+			break;
+		case Thing::TEAPOT:
+			thing = make_shared<Thing>(teapot.get(), Thing::TEAPOT);
+			break;
+		case Thing::SPHERE:
+			thing = make_shared<Thing>(sphere.get(), Thing::SPHERE);
+			break;
+		case Thing::REVOLUTION:
+			thing = make_shared<Thing>(revolution.get(), Thing::REVOLUTION);
+			break;
 		}
 
 		int row = i / colCount;
@@ -534,9 +509,14 @@ static void init()
 		thingVec.push_back(thing);
 	}
 
-	numLights = 100;
-	float cpx = (rowCount) * spacing;
-	float cpz = (colCount) * spacing;
+
+	////////////////////////////////////////////////////////////////
+	// CREATE LIGHTS
+	////////////////////////////////////////////////////////////////
+
+	numLights = 75;
+	float cpx = (rowCount)*spacing;
+	float cpz = (colCount)*spacing;
 	float cc = 0.25;
 	for (int i = 0; i < numLights; i++) {
 		auto l = make_shared<Light>();
@@ -551,9 +531,21 @@ static void init()
 		lightVec.push_back(l);
 	}
 
+
+	////////////////////////////////////////////////////////////////
+	// FINISH INIT
+	////////////////////////////////////////////////////////////////
+
+	// create camera
+	camera = make_shared<Camera>();
+	camera->setInitDistance(20.0f); // FreelookCam's initial Z translation
+
+	// set render mode for image (task 6)
 	progPass2->bind();
-	glUniform1i(progPass2->getUniform("renderMode"), render_mode::DEFAULT);
+	glUniform1i(progPass2->getUniform("renderMode"), render_mode::POS_TEXTURE);
 	progPass2->unbind();
+
+	GLSL::checkError(GET_FILE_LINE);
 }
 
 // This function is called every frame to draw the scene.
