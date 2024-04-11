@@ -534,7 +534,7 @@ static void init()
 		thingVec.push_back(thing);
 	}
 
-	numLights = 50;
+	numLights = 100;
 	float cpx = (rowCount) * spacing;
 	float cpz = (colCount) * spacing;
 	float cc = 0.25;
@@ -552,7 +552,7 @@ static void init()
 	}
 
 	progPass2->bind();
-	glUniform1i(progPass2->getUniform("renderMode"), render_mode::NOR_TEXTURE);
+	glUniform1i(progPass2->getUniform("renderMode"), render_mode::DEFAULT);
 	progPass2->unbind();
 }
 

@@ -42,10 +42,10 @@ void main()
 			 c * (cos(s * (deltax)) + h) * cos(theta)
 		);
 
-		vec3 n_hat = normalize(cross(dpdx, dpdt));
+		vec3 n_hat = normalize(cross(dpdt, dpdx));
 
 		vec3 pos = vec3(x, y, z);
-		vec3 nor = vec3(n_hat.x, n_hat.y, n_hat.z);
+		vec3 nor = normalize(mat3(invMV) * n_hat);
 
 		gl_Position = P * (MV * vec4(pos, 1.0));
 		vPos = vec3(MV * vec4(pos, 1.0));
