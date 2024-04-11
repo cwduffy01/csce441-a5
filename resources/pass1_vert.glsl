@@ -16,7 +16,7 @@ varying vec3 vNor;
 
 void main()
 {
-	if (aNor.x == 0 && aNor.y == 0 && aNor.z == 0) {
+	if (polar) {
 		float x = aPos.x;
 		float theta = aPos.y;
 

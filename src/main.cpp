@@ -168,6 +168,7 @@ static void init()
 	progPass1->addUniform("kd");
 	progPass1->addUniform("t");
 	progPass1->addUniform("tOff");
+	progPass1->addUniform("polar");
 	progPass1->setVerbose(false);
 
 	// initialize pass 2

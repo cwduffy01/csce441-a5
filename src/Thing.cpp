@@ -24,6 +24,7 @@ Thing::Thing(Shape* s, Thing::shape_type t) : shape(s), type(t) {
 	timeShift = randf() * 2 * 3.14;
 }
 
+// cpu animations
 void Thing::update(shared_ptr<MatrixStack> MV, double t) {
 	float h = 1;
 	float s = 0.25;
@@ -41,7 +42,6 @@ void Thing::update(shared_ptr<MatrixStack> MV, double t) {
 			MV->rotate(-1.57, 0.0f, 1.0f, 0.0f);
 			break;
 		case Thing::SPHERE:
-			
 			MV->translate(0.0f, (h / 2) * (-1 * cos(r * (t + timeShift)) + 1), 0.0f);
 			MV->scale(1 + (s / 2) * (cos(2 * r * (t + timeShift)) - 1), 1.0, 1 + (s / 2) * (cos(2 * r * (t + timeShift)) - 1));
 			break;
@@ -57,8 +57,8 @@ void Thing::draw(std::shared_ptr<Program> prog) {
 	case Thing::SPHERE:
 		glUniform1i(prog->getUniform("polar"), 0);
 		break;
-	case Thing::REVOLUTION:
-		glUniform1i(prog->getUniform("polar"), 0);
+	case Thing::REVOLUTION:	// draw in polar coordinates
+		glUniform1i(prog->getUniform("polar"), 1);
 		break;
 	}
 	shape->draw(prog);

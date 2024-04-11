@@ -99,7 +99,4 @@ void main()
     else if (renderMode == 2) { gl_FragColor.rgb = nor; }
     else if (renderMode == 3) { gl_FragColor.rgb = ke; }
     else if (renderMode == 4) { gl_FragColor.rgb = kd; }
-
-    
-    //gl_FragColor.rgb = nor;
 }

@@ -27,24 +27,13 @@ Shape::~Shape()
 {
 }
 
+// return the translation factor to place objects on the ground
 float findYMin(vector<float>& posBuf, bool polar) {
 	float miny;
 	if (polar) {
 		miny = 0.0;
-
 		for (int i = 0; i < posBuf.size(); i += 3) {
 			float x = posBuf.at(i);
-			float theta = posBuf.at(i + 1);
-
-
-			float c = 0.2;
-			float s = 5;
-			float h = 2;
-
-
-			float f = c * (cos(s * x) + h);
-			float y = f * cos(theta);
-
 			if (x < miny) { miny = x; }
 		}
 	}
@@ -55,7 +44,6 @@ float findYMin(vector<float>& posBuf, bool polar) {
 			if (posBuf.at(yidx) < miny) { miny = posBuf.at(yidx); }
 			yidx += 3;
 		}
-
 	}
 	return miny;
 }
@@ -106,9 +94,9 @@ void Shape::loadMesh(const string &meshName)
 	}
 
 	this->miny = findYMin(posBuf, polar);
-
 }
 
+// initialize a shape based on pre-defined buffers
 void Shape::loadPoints(std::vector<float> pBuf, std::vector<float> nBuf, std::vector<float> tBuf, std::vector<unsigned int> iBuf) {
 	posBuf = pBuf;
 	if (nBuf.size() > 0) { norBuf = nBuf; }
@@ -204,18 +192,15 @@ void Shape::draw(const shared_ptr<Program> prog) const
 		glVertexAttribPointer(h_tex, 2, GL_FLOAT, GL_FALSE, 0, (const void*)0);
 	}
 
-	if (indBufID != 0) {
+	if (indBufID != 0) {	// draw mesh
 		int indCount = (int)indBuf.size();
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indBufID);
 		glDrawElements(GL_TRIANGLES, indCount, GL_UNSIGNED_INT, (void*)0);
 	}
-	else {
+	else {	// draw buffers
 		int count = posBuf.size() / 3; // number of indices to be rendered
 		glDrawArrays(GL_TRIANGLES, 0, count);
 	}
-
-	// Draw
-	
 
 	// Disable and unbind
 	if (h_tex != -1) {
